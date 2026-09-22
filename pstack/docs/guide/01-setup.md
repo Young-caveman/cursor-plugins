@@ -1,38 +1,26 @@
 # Set up pstack
 
-In this page you install the plugin, pick which models pstack uses, and run your first task. Setup is one command plus a short conversation.
+This page covers PStack's model setup and a first task. Model routing currently targets Codex and OpenCode 1.x; their installation and skill-invocation commands differ.
 
 ## Install the plugin
 
-In a Cursor chat, run:
-
-```text
-/add-plugin pstack
-```
-
-Cursor confirms the plugin is installed.
+Make the PStack skills available in your active harness first. The Cursor plugin command `/add-plugin pstack` is Cursor-specific; it does not install PStack into Codex or OpenCode.
 
 ## Pick your models
 
-Run:
+Invoke [`setup-pstack`](../../skills/setup-pstack/SKILL.md) through your harness's skill interface, or ask the agent to use it. It checks the active subagent API, installed version, available model IDs, and current harness settings. It then shows the role table, model profiles, supported reasoning options, and panel sizes for your choice.
 
-```text
-/setup-pstack
-```
+Setup saves one PStack policy at `~/.config/pstack/models.json`. It may also create namespaced Codex TOML or OpenCode agent definitions when the active invocation path can use them. The policy remains the source of truth; setup does not rewrite your main chat model or general harness config. Skills use a role's default profile and may choose only a profile you allowed for that role. A missing role requires setup or an explicit choice, not a stale hard-coded model.
 
-[`/setup-pstack`](../../skills/setup-pstack/SKILL.md) detects the models you have access to, asks for a reasoning budget, shows you each role (code delegates, judgment, the review panels), and asks what you want. Answer the questions. It writes `~/.cursor/rules/pstack-models.mdc`, a small rule every pstack skill reads.
-
-You only override what you care about. A role with no line in the rule keeps the skill's default. To restore a default later, delete that role's line, or just run `/setup-pstack` again.
-
-You might be wondering what happens if you use Auto. Set a role to `inherit-parent` or `auto` and pstack omits the subagent `model` field, so the subagent inherits your parent chat model. Both values mean the same thing, and neither is a model slug. For a panel role the value is a list, and one subagent runs per entry, so the list length sets the panel size. Setup also configures `swarm workers`, the default model for every `/swarm` worker unless a race names a model for each arm.
+`inherit-parent` expresses an intention to use the parent session's model and reasoning. It is offered only when the current Codex or OpenCode invocation path can honor it. The old Cursor `auto`/`inherit-parent` entries and Cursor model slugs are not copied as native IDs. A panel list still starts one subagent per entry; `swarm workers` sets the worker default unless a race specifies its arms.
 
 ## Accept the verification offer, or don't
 
-At the end of setup, `/setup-pstack` looks for a way to prove app behavior in your project, either a `verify-*` skill or an existing harness. If it finds neither, it offers once to generate one with [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md).
+At the end of setup, `setup-pstack` looks for a way to prove app behavior in your project, either a `verify-*` skill or an existing harness. If it finds neither, it offers once to generate one with [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md).
 
-Say yes and it writes `.cursor/skills/verify-<app>/`, a project-local skill that teaches agents to drive your app the way a user does. It proves the skill works once before handing it over. Say no and setup moves on. You can run `/create-verification-skill` yourself any time. [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) covers when it earns its place.
+The verification skill's destination depends on the harness. It is separate from model routing; say no if you only want to configure models. [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) covers when it earns its place.
 
-After setup, start a new chat. The model rule applies to new sessions.
+Start a new session if your harness needs one to load new agent definitions. Setup should report this after inspecting the active harness.
 
 ## Run your first task
 

@@ -1,74 +1,42 @@
 ---
 name: setup-pstack
-description: Configure which models pstack uses per role and at what reasoning budget. Detects your available models and writes an always-applied rule that overrides the skill defaults. Use for /setup-pstack, "configure pstack models", "pstack budget", or changing pstack's model choices.
+description: Configure PStack's role-based model routing for Codex and OpenCode. Use for /setup-pstack, "configure pstack models", or changing PStack's reasoning and model choices.
 ---
 
-# Setup pstack
+# Set up PStack model routing
 
-Write `~/.cursor/rules/pstack-models.mdc`, an always-applied rule that sets pstack's model per role.
+Keep one user-owned policy at `~/.config/pstack/models.json`. It records **intent**: named model profiles, each role's default profile, and the profiles that role may choose at runtime. The policy is the source of truth. Harness configuration is an output of setup, not a second place to choose PStack models. Read [the policy and adapter contract](references/model-routing.md) when creating, changing, or consuming this configuration.
 
-## Steps
+## 1. Inspect the active harness
 
-### 1. Detect available models
+Identify whether this session is Codex, OpenCode, or another wrapper such as T3 Code around one of them. Inspect the actual subagent tool schema; do not infer it from the outer UI. Record whether a call can choose an agent type, a model, and a reasoning setting separately. Check the installed harness version and its effective user/project model settings. This adapter supports OpenCode 1.x; if the active OpenCode has another major version, do not generate or apply OpenCode profiles until that version has an adapter. Existing harness settings may override a generated default or prevent parent inheritance.
 
-Enumerate the model slugs you can pass to a `Task` subagent in this session. That is the dependable source. If Cursor also exposes a models API or CLI that lists the user's entitled models, prefer it for completeness. If you cannot detect any, ask the user to paste the slugs they have access to. Never write a real slug you have not confirmed is available. The aliases `inherit-parent` and `auto` are always valid even though they are not detected slugs.
+Collect model IDs the user can actually select in each active harness. Use the harness's model picker or catalog and, when useful, `opencode models`; a catalog entry alone does not prove entitlement. Confirm each requested reasoning effort or variant for that model. Save only confirmed model/effort combinations in a ready policy. If availability cannot be checked, ask the user to provide or confirm a selectable ID before saving; this schema has no unverified-status field, so do not store unverified mappings or silently substitute another model. Codex model IDs, OpenCode 1.x `provider/model` IDs, and provider-specific reasoning options are different namespaces.
 
-### 2. Load current state
+If `~/.config/pstack/models.json` exists, read it as the current choice. An old `~/.cursor/rules/pstack-models.mdc` may inform migration, but its Cursor slugs and `auto` marker are not valid Codex/OpenCode IDs. Do not copy them without translation and validation.
 
-The default role-to-model mapping is the rule shape shown in step 5 below. If `~/.cursor/rules/pstack-models.mdc` already exists, read it and treat its `# budget` line and its role values as the current choices. Otherwise start from those defaults.
+## 2. Agree on routing and cost
 
-### 3. Budget, map, and confirm
+Ask which active harnesses to configure. Show the effective parent/default model, then offer named profiles such as `fast`, `balanced`, and `deep`; these are user-editable names, not model tiers. For each profile show the exact model ID and supported reasoning setting in each harness. Reasoning effort changes compute use; it is not a guarantee of answer quality or a monetary spending cap.
 
-**(a) Ask for a budget.** Prefer AskQuestion over free text. Offer these four options with these exact labels, and name the current budget when the rule records one.
+Show every role in the policy contract. A role has one default profile and may list additional **allowed** profiles that its skill can select based on task difficulty. The user may lock a role by allowing only its default. Panel roles contain ordered profile lists; each entry launches one agent, including repeated or inherited entries. `arena cross-judge pool` is a candidate pool for one judge. `swarm workers` is the default profile for each worker unless the user specifies race arms. Show these counts and likely cost before accepting the choices. Preserve explicit user model requirements and any restrictions on provider, reasoning, or escalation.
 
-- `unlimited — keep max`
-- `large — xhigh reasoning`
-- `medium — high reasoning`
-- `small — medium reasoning`
+Treat `inherit-parent` as an intent, not as a model ID. Offer it only when the active harness can resolve it as requested. In Codex, omitting a spawn model may still use `agents.default_subagent_model`, `agents.default_subagent_reasoning_effort`, or a custom agent's settings. In OpenCode, an unconfigured subagent model inherits its caller's session model. If the current invocation path cannot guarantee inheritance, mark that profile unsupported for that path and request a concrete model or a configuration change.
 
-**(b) Apply it.** Build the working table from the skill defaults, and on a re-run keep any role you changed by family, list, or alias (`inherit-parent`, `auto`). `unlimited` leaves every effort as in that table. `large`, `medium`, and `small` set the effort token of every real slug, panel entries included, to `xhigh`, `high`, or `medium`. The effort token is the last token, or the one before a trailing `fast`, on the ladder `max` > `xhigh` > `high` > `medium` > `low`. If the result is not a detected slug, use the same family's detected slug with the highest effort at or below the target, else mark the role as needing a choice. `inherit-parent` and `auto` do not change. So `small` turns `claude-fable-5-1-thinking-max` into `claude-fable-5-1-thinking-medium`, and `grok-4.6-fast-xhigh` into `cursor-grok-4.6-medium-fast` when only that form is detected.
+## 3. Save one policy and sync native configuration
 
-**(c) Show the roles and confirm.** Show every role with its model, marking any real slug not in the detected set as needing a choice. Ask whether to accept as-is or change specific roles, offering the detected models plus `inherit-parent` and `auto` (both mean: this role runs on the parent chat model, which is how Auto users stay on Auto) as the options. Prefer AskQuestion over free text. For panel roles (arena runners, architect runners, interrogate reviewers) the value is a list, and one subagent runs per entry, alias entries included, so the list length sets the count. `arena cross-judge pool` is also a list, but Arena selects one value from it whose model family differs from the parent's when possible. `swarm workers` is the default model for every worker unless a race or comparison assigns another model per arm.
+Write `~/.config/pstack/models.json` in the [documented schema](references/model-routing.md), preserving existing unrelated user settings. A saved policy may contain only confirmed model/effort combinations; if a required mapping remains unverified, ask the user to confirm it before saving. The current user's explicit task choice outranks a role default. A skill may switch only to a profile in that role's `allowed` list and must state the chosen profile when it differs from the default. No automatic move to a higher reasoning tier or another model family.
 
-### 4. Validate
+Where native agent profiles are usable, create or update only PStack-namespaced files: `$CODEX_HOME/agents/pstack-<profile>.toml` (or `~/.codex/agents/` when `CODEX_HOME` is unset) for Codex and `$XDG_CONFIG_HOME/opencode/agents/` (or `~/.config/opencode/agents/` when `XDG_CONFIG_HOME` is unset) for OpenCode 1.x. Keep the same profile names as the policy. Do not rewrite Codex's main `config.toml`, `opencode.json`, or project settings merely to install PStack. Preserve non-PStack files and any user edits to a previously generated file; show a diff and ask how to reconcile a conflict. A native profile must contain the policy's exact model and supported effort/variant, with no role-specific instructions, tools, or permission changes. Standalone Codex agent files require `developer_instructions`; use only a neutral instruction to follow the invoking task and its constraints. OpenCode 1.x uses `model: provider/model` and provider-specific agent options such as `reasoningEffort`; do not assume `model#variant` works there. For another OpenCode major version, report the adapter as unsupported and do not apply its files.
 
-Every real slug written must be in the detected set. `inherit-parent` and `auto` always pass. If a chosen real slug is not available, stop and ask again.
+When the available subagent tool can pass model/effort but cannot select a native profile agent, resolve the policy profile into explicit invocation parameters. This is the path exposed by some Codex sessions under T3 Code. When a workflow requires an existing agent type or prompt, preserve it and use explicit parameters if supported; model routing must not silently replace that agent's instructions. Native files are useful only on invocation paths that actually load them. If neither route can honor a choice, report the mismatch before running work.
 
-### 5. Write the rule
+## 4. Verify and report
 
-Write `~/.cursor/rules/pstack-models.mdc` with `alwaysApply: true`, a `# budget` line with the chosen label and its target effort, and one line per role, using the same labels poteto-mode uses. Overwrite the whole file so re-runs stay idempotent. Shape:
+Use `scripts/model_policy.py validate` after saving the policy and `resolve` for each role/profile that will be used. Use `render-agent` when generating native agent files, then validate their TOML/frontmatter syntax. These checks establish structure only. Separately confirm model availability, reasoning support, and effective config precedence with the active harness. For an unresolvable model, stop that call and ask for a confirmed replacement or use a fallback the user explicitly approved in the policy. Never pick the closest or highest-reasoning model on your own.
 
-```
----
-description: pstack per-role model choices (overrides skill defaults)
-alwaysApply: true
----
-# pstack model configuration. One line per role. Delete a line to fall back to the skill default.
-# `inherit-parent` or `auto` as a value: the role runs on the parent chat model (omit Task `model`). Alias entries in a panel list still count toward its fan-out.
-# budget: unlimited (max)
-feature, refactoring: grok-4.6-fast-xhigh
-bug-fix: grok-4.6-fast-xhigh
-perf-issue: grok-4.6-fast-xhigh
-hillclimb: grok-4.6-fast-xhigh
-judgment and prose: claude-fable-5-1-thinking-max
-hardest tasks: claude-fable-5-1-thinking-max
-how explorer: grok-4.6-fast-xhigh
-how explainer: claude-fable-5-1-thinking-max
-why investigators: grok-4.6-fast-xhigh
-why synthesizer: claude-fable-5-1-thinking-max
-reflect tooling: gpt-5.6-sol-max
-reflect judgment, divergent, synthesizer: claude-fable-5-1-thinking-max
-arena runners: claude-fable-5-1-thinking-max, gpt-5.6-sol-max, grok-4.6-fast-xhigh, claude-opus-5-thinking-xhigh
-arena cross-judge pool: claude-fable-5-1-thinking-max, gpt-5.6-sol-max, grok-4.6-fast-xhigh, claude-opus-5-thinking-xhigh
-swarm workers: grok-4.6-fast-xhigh
-architect runners: claude-fable-5-1-thinking-max, gpt-5.6-sol-max, grok-4.6-fast-xhigh, claude-opus-5-thinking-xhigh
-interrogate reviewers: claude-fable-5-1-thinking-max, gpt-5.6-sol-max, grok-4.6-fast-xhigh, claude-opus-5-thinking-xhigh
-```
+Report the saved policy path, generated native files, active harnesses, any mappings left unsaved pending confirmation, precedence conflicts, and whether a new session is needed to load them. Re-running setup updates PStack's own policy and generated files; it does not change the user's main chat model.
 
-### 6. Confirm
+## 5. Offer project verification once
 
-Tell the user the rule was written and that it applies to new sessions. Re-running this skill updates it.
-
-### 7. Offer a verification skill (optional)
-
-Check whether the project has a way to drive the real app for proof (a `verify-*` skill, or an existing harness). If not, offer once: "want a project-local verification skill, so agents can drive the app the way a user does and prove changes work? I can generate one with /create-verification-skill." On yes, invoke `/create-verification-skill` (resolves wherever pstack is installed: workspace, user, or plugin). On no, move on without pushing.
+As before, check whether the project already has a way to drive the real app for proof. If it has neither a `verify-*` skill nor an existing harness, offer once to create a project-local verification skill. Do so only if the user accepts; this is separate from model routing.
