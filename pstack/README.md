@@ -4,26 +4,38 @@ i'm [poteto](https://x.com/poteto). i'm not a president or ceo, but i've worked 
 
 there's a growing sense that ai writes too much slop code. i agree. i don't want to ship like a team of twenty slop artists. throughput without quality is not a goal i aspire to. if you want to go fast, go deep first. 
 
-**pstack is my answer.** these are the same skills i use everyday to ship high quality code at Cursor. this turns cursor into a real engineering team. the goal is not to maximize loc, in fact it's the opposite. pstack helps you write less, but higher quality code.
+**pstack is my answer.** it's a set of reusable engineering skills for doing rigorous work with coding agents: go deep, parallelize carefully, and verify the result. the goal is not to maximize loc, in fact it's the opposite. pstack helps you write less, but higher quality code.
 
 **pstack gives you fearless parallelism.** when you can go deep on one agent and trust it to write good, verifiable code, you can truly parallelize with confidence. start multiple agents up with `poteto-mode` and trust that they'll apply rigorous engineering principles to their work.
 
-**cursor gives you the best of all worlds.** every frontier model has its strengths and weaknesses. use any model with pstack. in fact, many of my skills use multi-model workflows to take advantage of each model's unique strengths.
+**use the right model for the work.** every model has its strengths and weaknesses. PStack routes work across the models available in your harness, and several workflows use multiple models when their different strengths help.
 
 fork it. improve it. make it yours. PRs are welcome! 
 
 ## install
 
 ```bash
-/add-plugin pstack
+npx skills add ./skills --global --agent codex --agent opencode
 ```
+
+Run this from the `pstack` directory in a local checkout. The [Vercel Skills CLI](https://github.com/vercel-labs/skills) installs into the selected harness's skill location. Choose symlink when prompted to keep this checkout as the single source of truth; use `--copy` for a snapshot. To install for only one harness, pass only `--agent codex` or `--agent opencode`. For the Cursor plugin install flow, use Cursor's `/add-plugin pstack` command.
+
+To test a worktree without changing your global installation, run this from the repository root while that worktree is checked out:
+
+```bash
+npx skills add ./pstack/skills --agent codex --agent opencode
+```
+
+Choose symlink for this project-scoped install so it uses the worktree as the source of truth under `.agents/skills/`. Do not add `--global` for a worktree test. The first command above is the personal install available across projects.
 
 ## get started
 
 two steps:
 
 1. run [`setup-pstack`](./skills/setup-pstack/SKILL.md) in your active harness, choose model profiles, and set the roles that may switch profiles at runtime.
-2. use [`/poteto-mode`](./skills/poteto-mode/SKILL.md) whenever you're doing anything that requires rigor.
+2. invoke [`poteto-mode`](./skills/poteto-mode/SKILL.md) with your harness's skill selector whenever you're doing anything that requires rigor. In Codex, use `$poteto-mode`; in OpenCode, ask the agent to use the `poteto-mode` skill.
+
+Skill names shown with a leading slash below are shorthand for the harness's skill selector; they are not all literal slash commands.
 
 new here? the [pstack guide](./docs/guide/README.md) walks you through a first real task, from setup and prompting through verification and overnight runs.
 
@@ -31,20 +43,18 @@ that's it. the other skills are situational; the mode skill uses them for you as
 
 ## usage
 
-use [`/poteto-mode`](./skills/poteto-mode/SKILL.md) at the start of a task. it reads your request, picks from a set of playbooks, and runs the other skills as the steps need them.
+use [`poteto-mode`](./skills/poteto-mode/SKILL.md) at the start of a task. It reads your request, picks from a set of playbooks, and runs the other skills as the steps need them.
 
-### just use [`/poteto-mode`](./skills/poteto-mode/SKILL.md)
+### just use [`poteto-mode`](./skills/poteto-mode/SKILL.md)
 
 this skill is the main shortcut. i use it whenever i need the agent to do rigorous engineering work. it comes with twenty-three playbooks:
 
 ```
-/poteto-mode this pr has a subtle bug where the scroll drifts every 750ms even when idle. repro
-first, then fix and verify.
+Use poteto-mode: this PR has a subtle bug where the scroll drifts every 750ms even when idle. Reproduce it first.
 ```
 
 ```
-/poteto-mode i'm going to bed. land the stack even if ci flakes. i want everything merged by
-morning.
+Use poteto-mode: I'm going to bed. Land the stack even if CI flakes. I want everything merged by morning.
 ```
 
 <details>
