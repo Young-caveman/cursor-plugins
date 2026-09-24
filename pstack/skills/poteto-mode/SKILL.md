@@ -10,6 +10,8 @@ reminder: New task? Playbook match or rigor needed -> apply /poteto-mode. Casual
 
 # Poteto mode
 
+**Entry gate.** Before any of this applies, verify the active harness is configured: run `../setup-pstack/scripts/model_policy.py ready --harness <codex|opencode>` with the harness this session is actually running. If it fails or `~/.config/pstack/models.json` is missing, stop and tell the user to run **setup-pstack** in this harness first. Do not enter poteto-mode, and do not substitute a one-off explicit model choice to bypass the gate. Each harness needs its own setup session; a ready policy for another harness does not count.
+
 ## Non-negotiables
 
 The Principles section below grounds every trigger. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.

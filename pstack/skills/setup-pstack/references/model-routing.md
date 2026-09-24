@@ -31,11 +31,15 @@ The OpenCode adapter and policy format in this version target OpenCode 1.x (test
 }
 ```
 
-A ready policy must define every role below and reference profiles available in each active harness. Each single-profile role has `default` and `allowed`, with the default included in `allowed`. Runtime selection outside `allowed` requires a new user instruction or setup change. A list role's `default` is an ordered list; repetitions are intentional. Profiles may use `selection: "inherit-parent"` instead of `model` only after the active invocation path has been checked for genuine inheritance. `options` contains provider-specific OpenCode agent options, not a universal reasoning ladder. Do not turn an unsupported effort into part of a model ID.
+A ready policy must define every role below. Each single-profile role has `default` and `allowed`, with the default included in `allowed`. Runtime selection outside `allowed` requires a new user instruction or setup change. A list role's `default` is an ordered list; repetitions are intentional. Profiles may use `selection: "inherit-parent"` instead of `model` only after the active invocation path has been checked for genuine inheritance. `options` contains provider-specific OpenCode agent options, not a universal reasoning ladder. Do not turn an unsupported effort into part of a model ID.
 
 Single-profile roles: `feature`, `refactoring`, `bug-fix`, `perf-issue`, `hillclimb`, `judgment and prose`, `hardest tasks`, `how explorer`, `how explainer`, `why investigators`, `why synthesizer`, `reflect tooling`, `reflect judgment, divergent, synthesizer`, `swarm workers`, and `recall fanout`.
 
 List roles: `arena runners`, `arena cross-judge pool`, `architect runners`, and `interrogate reviewers`. The cross-judge pool selects one entry; the other list lengths set their agent counts.
+
+## Per-harness readiness
+
+Profile names and role routes are shared across harnesses; each profile holds one settings entry per harness. A setup session runs inside one harness and fills only that harness's entry in each profile; it must preserve the other harness's saved entries and never overwrite them. The `harnesses` list names the harnesses that are fully configured: every profile has a confirmed entry for them. A harness is **ready** when it is listed in `harnesses` and every role resolves to a confirmed mapping for that harness; check with `scripts/model_policy.py ready --harness <harness>`. poteto-mode must refuse to run in a harness that is not ready. A session in one harness cannot confirm another harness's model entitlements, so each harness gets its own setup run inside that harness.
 
 ## Resolution at a call site
 

@@ -14,6 +14,7 @@ Turn PStack into a practical personal engineering baseline. Initial harness targ
 - The shared PStack skills stay in one source tree. Harness-specific installation and model configuration belong at their respective harness boundaries.
 - For manual install testing, use a worktree's project-scoped skill install so it does not replace a global installation. The user will perform real install and harness testing.
 - Prefer a free or low-cost OpenCode model, such as Muse Spark 1.3 Contributor, for the user's manual tests when available.
+- Keep working files under `pstack/`. This repo is cone-mode sparse-checkout (`/*`, `!/*/`, `/pstack/`), and T3 Code checkpoints run `git add -A -- .`, which git refuses (exit 1) for paths outside the sparse cone; that turn's filesystem checkpoint is then unavailable. If a new top-level directory is required, run `git sparse-checkout add <dir>` before writing into it. Do not disable sparse-checkout to work around this.
 
 ## Current state
 
@@ -22,6 +23,7 @@ Turn PStack into a practical personal engineering baseline. Initial harness targ
 - `Make Bot UI` and `Poteto Mode` skill names were normalized to match their directory names.
 - No installer was run for these latest changes, and no real harness call was made. Static diff and skill-name checks passed.
 - `PLUGINS.md` retains the original root plugin catalog. `README.md` links to that catalog and this handoff file.
+- `develop-log/` was moved to `pstack/develop-log/` (uncommitted on `main`) so T3 Code checkpoints capture it. T3 Code itself was not patched.
 
 ## Manual test branches
 

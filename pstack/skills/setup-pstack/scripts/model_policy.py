@@ -113,6 +113,16 @@ def resolve(policy, harness, role, profile=None, index=None):
     return {"role": role, "profile": selected, "harness": harness, "settings": policy["profiles"][selected][harness]}
 
 
+def ready(policy, harness):
+    require(harness in policy["harnesses"], f"harness {harness} is not configured")
+    for role in SINGLE_ROLES:
+        resolve(policy, harness, role)
+    for role in LIST_ROLES:
+        for index in range(len(policy["roles"][role]["default"])):
+            resolve(policy, harness, role, index=index)
+    return {"harness": harness, "ready": True}
+
+
 def render_agent(policy, harness, profile):
     require(harness in policy["harnesses"], f"harness {harness} is not configured")
     require(profile in policy["profiles"], f"unknown profile: {profile}")
@@ -141,7 +151,7 @@ def render_agent(policy, harness, profile):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["validate", "resolve", "render-agent"])
+    parser.add_argument("command", choices=["validate", "ready", "resolve", "render-agent"])
     parser.add_argument("--policy", type=Path, default=Path.home() / ".config/pstack/models.json")
     parser.add_argument("--harness", choices=sorted(HARNESSES))
     parser.add_argument("--role")
@@ -152,6 +162,9 @@ def main():
         policy = validate(json.loads(args.policy.read_text(encoding="utf-8")))
         if args.command == "validate":
             print("PStack model policy is structurally valid; model availability still needs harness verification")
+        elif args.command == "ready":
+            require(args.harness, "ready requires --harness")
+            print(json.dumps(ready(policy, args.harness), ensure_ascii=False))
         elif args.command == "resolve":
             require(args.harness and args.role, "resolve requires --harness and --role")
             print(json.dumps(resolve(policy, args.harness, args.role, args.profile, args.index), ensure_ascii=False))
