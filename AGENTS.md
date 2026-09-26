@@ -57,7 +57,7 @@ Update the test copy: `git -C /cave/Wisdio-pstack merge develop1-engine`.
 - A pool with no `default` entry now fails validation. Before each delegated call, resolve the chosen entry against live T3 capabilities; structural validation alone does not establish availability.
 - Skill authoring uses `skill-creator` when installed and direct `SKILL.md` authoring otherwise. Do not assume OpenCode has that skill.
 - `disable-model-invocation: true` only gates Claude Code. Codex and the installed OpenCode do not enforce manual-only workflow invocation; their docs must state this limitation.
-- Claude Code drops most skill descriptions when the list is long: 23 of 25 PStack skills reach its model as a bare name. Descriptions need shortening.
+- Claude Code's skill-listing budget scales with the main model's context: Haiku 4.5 sessions cut the list at ~8,000 characters (23 of 25 PStack skills lost their descriptions), while Sonnet 5 and Opus 5.5 sessions kept all 52 descriptions (21,754 characters). Shortening only matters for small-context main models.
 - Plan mode's read-only enforcement and whether it keeps MCP servers are unverified per provider; `why` and `reflect` avoid plan mode for that reason.
 - `make-bot-ui` targets a Grok Bot webhook on `cursor.sh`; left as is.
 - T3's Claude adapter silently remaps some effort values (`effortMap`). Warn the user; don't build a remap table.
@@ -67,7 +67,7 @@ Update the test copy: `git -C /cave/Wisdio-pstack merge develop1-engine`.
 ## Next
 
 1. First real Wisdio task: run `/create-verification-skill` in `/cave/Wisdio-pstack` for a macOS verification skeleton, then prove its generated instructions on one feature. This is still pending; the user runs harness tests.
-2. Shorten skill descriptions so Claude keeps them (listing budget ~8,000 characters).
+2. Low priority: shorten skill descriptions, only needed if a small-context model (Haiku 4.5) runs the main Claude chat.
 3. Later: evals and audits to pick models per task (user's plan; not now).
 
 ## Safety

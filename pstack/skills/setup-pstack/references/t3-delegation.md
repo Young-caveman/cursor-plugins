@@ -19,7 +19,7 @@ A child receives only its task prompt and optional `role` (`implementation`, `re
 ## Target
 
 1. List candidates with `model_policy.py list --tier default`. Use `default` entries unless the task is genuinely hard: a previous attempt failed, the change is cross-cutting or subtle, or the user asks. Only then use `--tier escalation` entries, and say why.
-2. Dry-run the chosen entry with `model_policy.py resolve --id <entry> --snapshot <capabilities.json>`.
+2. Dry-run the chosen entry with `model_policy.py resolve --id <entry> --snapshot <capabilities.json>`. The snapshot is this thread's `orchestrator_capabilities` result; write it to a temp file or pipe it in with `--snapshot -`.
 3. For `delegate_task`, pass the resolved `providerInstanceId`, `model`, and `options` as `target`. For `t3_thread_launch`, pass them as `modelSelection: {instanceId: providerInstanceId, model, options}`. Never omit `model` when selecting a different provider: T3 may choose that provider's default instead.
 
 ## Several models on one task
