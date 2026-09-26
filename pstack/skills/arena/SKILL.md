@@ -8,16 +8,7 @@ disable-model-invocation: true
 
 Fan out N parallel attempts at the same task. Read every candidate end to end. Pick the strongest as the base. Graft the best ideas from the others into it. Verify the synthesized result.
 
-## Start
-
-Open a todolist with one entry per phase before launching anything.
-
-1. Frame
-2. Fan out
-3. Cross-judge
-4. Pick
-5. Graft
-6. Verify
+Phases: Frame, Fan out, Cross-judge, Pick, Graft, Verify. Delegate per [T3 delegation](../setup-pstack/references/t3-delegation.md).
 
 ## Phase A: Frame
 
@@ -25,12 +16,12 @@ The N candidates will receive the same prompt, so the prompt is the contract.
 
 1. State the artifact each candidate is producing.
 2. Derive the rubric. State what success looks like for *this* task, then turn it into 3-6 concrete gradeable criteria. The rubric is the picker's tool in Phase D. Candidates only see the task.
-3. Pick the runners from `arena runners` in the [PStack routing policy](../setup-pstack/references/model-routing.md). One entry means one runner, including repeated profiles. If the list is missing or unusable for this harness, resolve it with the user before spawning. A different runner count requires a task-specific user instruction or a setup change.
-4. Assign output paths. Each candidate writes to its own location (a git worktree where possible, otherwise `/tmp/arena-<slug>/candidate-<n>/`), per the **separate-before-serializing-shared-state** principle skill.
+3. Pick the runners: N pool entries, `default` tier unless the task is genuinely hard or the user asks. Default N is 2-3. Since arena produces one result, prefer the strongest entries you can justify over adding weaker ones for variety.
+4. Assign output locations, per the **separate-before-serializing-shared-state** principle skill. A code candidate gets its own worktree: `t3_thread_launch` with `workspaceStrategy: {type: "worktree", baseRef: <current branch>, branch: "arena/<slug>-<n>", startFromOrigin: false}`. A candidate that only writes a document can be a `delegate_task` child writing to `/tmp/arena-<slug>/candidate-<n>/`.
 
 ## Phase B: Fan out
 
-Spawn all N subagents in one message with `run_in_background: true`, each with the task, the path to the shared grounding, its own output path, and instructions to produce both the artifact and a short rationale.
+Launch all N in one message (async), each with a standalone brief: the task, the path to the shared grounding, its own output location, and instructions to produce both the artifact and a short rationale. End the turn; completions wake you.
 
 Each rationale names the alternatives the candidate considered and what it rejected.
 
@@ -38,7 +29,7 @@ If a candidate fails to produce output, proceed with N-1 and note the dropout in
 
 ## Phase C: Cross-judge
 
-After all Phase B candidates complete, choose one profile from `arena cross-judge pool` in the PStack routing policy. Prefer a model family different from the parent's **among the configured choices**; if none qualifies, disclose that limitation instead of inventing another model. Spawn one readonly judge subagent on the selected profile. It sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with the parent's reading in Phase D, not with the candidates themselves. Don't spawn the judge while candidates are still writing.
+After all Phase B candidates complete, pick one pool entry as judge, preferring a provider different from the parent's and from most candidates; if none qualifies, say so. Launch it as a read-only `delegate_task` child (`interactionMode: "plan"`). Point it at evidence (tests, diffs, the rubric), not just prose. It sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with the parent's reading in Phase D, not with the candidates themselves. Don't spawn the judge while candidates are still writing.
 
 ## Phase D: Pick a base
 

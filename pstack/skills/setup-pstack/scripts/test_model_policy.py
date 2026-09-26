@@ -251,6 +251,26 @@ class ValidateTest(unittest.TestCase):
         with self.assertRaises(model_policy.PolicyError):
             model_policy.validate(policy)
 
+    def test_tier_defaults_and_rejects_unknown(self):
+        policy = pool_policy()
+        policy["pool"][0]["tier"] = "escalation"
+        model_policy.validate(policy)
+        policy["pool"][0]["tier"] = "premium"
+        with self.assertRaises(model_policy.PolicyError) as caught:
+            model_policy.validate(policy)
+        self.assertIn("tier", str(caught.exception))
+
+    def test_list_filters_by_tier_and_resolve_reports_it(self):
+        policy = pool_policy()
+        policy["pool"][0]["tier"] = "escalation"
+        ids = [e["id"] for e in model_policy.list_pool(policy, "default")]
+        self.assertNotIn(policy["pool"][0]["id"], ids)
+        self.assertEqual(len(ids), len(policy["pool"]) - 1)
+        target = model_policy.resolve(policy, entry_id=policy["pool"][0]["id"])
+        self.assertEqual(target["tier"], "escalation")
+        other = model_policy.resolve(policy, entry_id=policy["pool"][1]["id"])
+        self.assertEqual(other["tier"], "default")
+
     def test_v1_reports_migration_required(self):
         policy = v1_policy()
         before = copy.deepcopy(policy)
@@ -542,6 +562,13 @@ class CliTest(unittest.TestCase):
             )
             content = policy_path.read_text(encoding="utf-8") if policy_path.exists() else None
             return completed, content
+
+    def test_list_command(self):
+        policy = pool_policy()
+        policy["pool"][0]["tier"] = "escalation"
+        completed, _ = self.run_cli(["list", "--tier", "escalation"], policy=policy)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual([e["id"] for e in json.loads(completed.stdout)], [policy["pool"][0]["id"]])
 
     def test_missing_policy_file_fails(self):
         with tempfile.TemporaryDirectory(prefix="pstack-policy-test-") as tmp:

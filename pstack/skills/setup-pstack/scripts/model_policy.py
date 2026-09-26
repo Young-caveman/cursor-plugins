@@ -15,6 +15,7 @@ from pathlib import Path
 POLICY_VERSION = 2
 ENTRY_ID = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
 OPTION_KEY = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+TIERS = ("default", "escalation")
 V1_HINT = (
     "version 1 is a role-routing policy and is no longer read by this helper; "
     "the file was left unchanged. Run `model_policy.py convert` to print a "
@@ -65,7 +66,7 @@ def validate(policy):
     seen = set()
     for entry in pool:
         require(isinstance(entry, dict), "pool entries must be objects")
-        extra = set(entry) - {"id", "providerInstanceId", "model", "options"}
+        extra = set(entry) - {"id", "providerInstanceId", "model", "options", "tier"}
         require(not extra, f"pool entry has unknown fields: {sorted(extra)}")
         missing = {"id", "providerInstanceId", "model"} - set(entry)
         require(not missing, f"pool entry is missing {sorted(missing)}")
@@ -81,6 +82,10 @@ def validate(policy):
                 is_token(entry[field]),
                 f"pool entry {entry_id}: {field} must be a nonempty token",
             )
+        require(
+            entry.get("tier", "default") in TIERS,
+            f"pool entry {entry_id}: tier must be one of {list(TIERS)}",
+        )
         options = entry.get("options", {})
         require(isinstance(options, dict), f"pool entry {entry_id}: options must be an object")
         for key, value in options.items():
@@ -289,6 +294,7 @@ def resolve(
             "providerInstanceId": entry["providerInstanceId"],
             "model": entry["model"],
             "options": dict(entry.get("options", {})),
+            "tier": entry.get("tier", "default"),
         }
     else:
         require(
@@ -311,6 +317,7 @@ def resolve(
                 "id": match["id"],
                 "providerInstanceId": match["providerInstanceId"],
                 "model": match["model"],
+                "tier": match.get("tier", "default"),
                 "options": dict(match.get("options", {})),
             }
         else:
@@ -339,6 +346,20 @@ def resolve(
         target["advertised"] = "not-checked"
     target["invocation"] = "unverified"
     return target
+
+
+def list_pool(policy, tier=None):
+    return [
+        {
+            "id": entry["id"],
+            "tier": entry.get("tier", "default"),
+            "providerInstanceId": entry["providerInstanceId"],
+            "model": entry["model"],
+            "options": dict(entry.get("options", {})),
+        }
+        for entry in policy["pool"]
+        if tier is None or entry.get("tier", "default") == tier
+    ]
 
 
 def propose(snapshot, provider_instance_id, model_id):
@@ -553,7 +574,7 @@ def load_snapshot(source):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["validate", "ready", "resolve", "propose", "convert"])
+    parser.add_argument("command", choices=["validate", "ready", "resolve", "list", "propose", "convert"])
     parser.add_argument("--policy", type=Path, default=Path.home() / ".config/pstack/models.json")
     parser.add_argument(
         "--snapshot",
@@ -561,6 +582,7 @@ def main(argv=None):
         help="file with the orchestrator_capabilities JSON, or - for stdin",
     )
     parser.add_argument("--id", dest="entry_id")
+    parser.add_argument("--tier", choices=TIERS, help="list only entries of this tier")
     parser.add_argument("--provider-instance-id")
     parser.add_argument("--model")
     parser.add_argument("--option", action="append", default=[], metavar="KEY=VALUE")
@@ -601,7 +623,9 @@ def main(argv=None):
             "revision (see references/model-routing.md).",
         )
         snapshot = load_snapshot(args.snapshot) if args.snapshot else None
-        if args.command == "validate":
+        if args.command == "list":
+            print(json.dumps(list_pool(policy, args.tier), indent=2, ensure_ascii=False))
+        elif args.command == "validate":
             print("PStack model pool is structurally valid; availability and invocation are not checked")
         elif args.command == "ready":
             result = ready(policy, snapshot)

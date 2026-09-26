@@ -28,6 +28,7 @@
 - `providerInstanceId`: exact id from this thread's capability snapshot.
 - `model`: exact model id advertised for that provider instance.
 - `options`: optional map of advertised option ids to string or boolean values. Omitted options keep the provider default. Store only values the user confirmed.
+- `tier`: optional, `default` (the default) or `escalation`. Workflows use `default` entries unless the task is genuinely hard; `escalation` marks entries the user wants spent only then, usually the expensive ones.
 
 The example is illustrative. A saved pool contains only model ids and option values that this thread advertised.
 
@@ -69,6 +70,7 @@ Descriptor order reflects the provider catalog and has no guaranteed strength se
 |---|---|
 | `validate [--policy PATH]` | Structural check of the v2 policy; v1 reports migration required. |
 | `ready [--snapshot PATH\|-]` | Structure plus advertised availability for every pool entry. Exit 1 when snapshot verification fails. |
+| `list [--tier default\|escalation]` | Print pool entries with their tier; no snapshot needed. |
 | `resolve --id ID` | Dry-run a saved pool entry. |
 | `resolve --provider-instance-id ID --model M [--option KEY=VALUE]...` | Resolve an exact saved combination, or a one-off with `--authorize-explicit REASON`. `REASON` is the user's actual instruction supplied as caller evidence; the helper cannot verify consent. Boolean values use `true`/`false`. |
 | `propose --snapshot PATH\|- --provider-instance-id ID --model M` | Print descriptors, choices, and defaults; ranks nothing and reads no policy. |
@@ -80,4 +82,4 @@ Descriptor order reflects the provider catalog and has no guaranteed strength se
 
 Version 1 (`profiles`, `harnesses`, `roles`) is not read by this helper. The file is preserved, and `validate`, `ready`, and `resolve` fail with a migration-required diagnostic. `convert` prints a draft: each proposed entry carries the v1 profiles and roles that used it plus warnings that v1 role restrictions do not carry into the shared pool and that v1 harness-native option names must be re-verified against the current snapshot. Save only entries the user confirms.
 
-This revision covers model setup only. Role-based skills, including `poteto-mode` and the skills that name roles such as `feature`, `arena runners`, or `interrogate reviewers`, still expect the v1 role policy and are **not migrated** here. `poteto-mode`'s gate calls the removed `ready --harness` interface and now surfaces the migration diagnostic; complete role integration is future work. Native agent-file generation (`render-agent`) is removed as well: the T3 delegation target is the supported route.
+Workflows consume the pool through [T3 delegation](t3-delegation.md): they list `default`-tier entries, escalate only for genuinely hard work, and pass the resolved target to `delegate_task` or `t3_thread_launch`. Native agent-file generation (`render-agent`) is removed: the T3 delegation target is the supported route.

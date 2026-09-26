@@ -30,7 +30,7 @@ Skip Phase A only when the work is genuinely greenfield with no surrounding syst
 
 Run the **arena** skill with the design-sketch task and the Phase A grounding artifacts. Pass `references/runner-prompt.md` as each runner's prompt. Each candidate produces a design package shaped per `references/rationale-template.md`.
 
-Use the ordered `architect runners` profiles from the [PStack routing policy](../setup-pstack/references/model-routing.md). If the list is missing or unusable, resolve it before starting the arena.
+Runners are pool entries chosen per [T3 delegation](../setup-pstack/references/t3-delegation.md). A cross-cutting design is the kind of hard task where `escalation`-tier runners are justified; say so when you use them.
 
 Design it twice. Require at least two structurally distinct candidates before synthesis, even when the first looks sufficient. This is the **exhaust-the-design-space** principle skill made concrete. Whole-shape alternatives, not point fixes inside one shape.
 

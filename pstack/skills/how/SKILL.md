@@ -19,31 +19,19 @@ When in doubt, take the simple path.
 
 ## Step 2a. Explore (complex questions only)
 
-Decompose the question into 2 to 4 exploration angles, each a distinct slice of the subsystem. Spawn all explorers in a single message:
-
-- `subagent_type`: `generalPurpose`
-- model profile: `how explorer` from the [PStack routing policy](../setup-pstack/references/model-routing.md)
-- `readonly`: `true`
+Decompose the question into 2 to 4 exploration angles, each a distinct slice of the subsystem. Launch all explorers in a single message. Each is a read-only `delegate_task` child per [T3 delegation](../setup-pstack/references/t3-delegation.md): `role: "research"`, `interactionMode: "plan"`, a `default`-tier pool entry, and "do not edit files" in the brief. Prefer different providers across explorers.
 
 Each explorer gets the prompt in `references/explorer-prompt.md` with its angle filled in. Then go to Step 3.
 
 ## Step 2b. Direct Explain (simple questions)
 
-Spawn one Task subagent that explores and explains in one pass:
-
-- `subagent_type`: `generalPurpose`
-- model profile: `how explainer` from the PStack routing policy
-- `readonly`: `true`
+Delegate one child that explores and explains in one pass. Each is a read-only `delegate_task` child per [T3 delegation](../setup-pstack/references/t3-delegation.md): `role: "research"`, `interactionMode: "plan"`, a `default`-tier pool entry, and "do not edit files" in the brief.
 
 Build its prompt from `references/explainer-prompt.md` without the explorer-findings section. Go to Step 4.
 
 ## Step 3. Synthesize (complex questions only)
 
-Once all explorers have returned, spawn one Task subagent to synthesize their findings into one explanation:
-
-- `subagent_type`: `generalPurpose`
-- model profile: `how explainer` from the PStack routing policy
-- `readonly`: `true`
+Once all explorers have returned, delegate one child to synthesize their findings into one explanation. Each is a read-only `delegate_task` child per [T3 delegation](../setup-pstack/references/t3-delegation.md): `role: "research"`, `interactionMode: "plan"`, a `default`-tier pool entry, and "do not edit files" in the brief.
 
 Build its prompt from `references/explainer-prompt.md` with every explorer's findings filled in.
 

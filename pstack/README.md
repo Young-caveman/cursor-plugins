@@ -35,7 +35,7 @@ two steps:
 1. run [`setup-pstack`](./skills/setup-pstack/SKILL.md) in your T3 Code session and choose the models that go in one shared pool, with the reasoning option you confirm for each.
 2. invoke [`poteto-mode`](./skills/poteto-mode/SKILL.md) with your harness's skill selector whenever you're doing anything that requires rigor. In Codex, use `$poteto-mode`; in OpenCode, ask the agent to use the `poteto-mode` skill.
 
-> **Model setup transition (this revision).** this revision covers model setup only. `setup-pstack` saves the v2 shared pool, but role-based workflows, including `poteto-mode`, still read the previous per-role policy; their readiness gate is incompatible with v2 and reports migration required until the next stage lands. do not expect the legacy gate to pass after setup yet.
+> **delegation.** every workflow that spawns agents goes through T3 per [`t3-delegation.md`](./skills/setup-pstack/references/t3-delegation.md): cheap `default`-tier pool entries normally, `escalation` entries only for hard work.
 
 Skill names shown with a leading slash below are shorthand for the harness's skill selector; they are not all literal slash commands.
 
@@ -195,13 +195,9 @@ automate-me:       /automate-me
 
 </details>
 
-## the `poteto-agent` and Comment Sicko subagents
+## delegated agents
 
-pstack also ships a subagent that runs my style end to end. spawn it from a parent agent via [`subagent_type: "poteto-agent"`](./agents/poteto-agent.md). it reads `poteto-mode` in full, including its inline principles index, before doing any work. substituting `generalPurpose` skips that read and drifts.
-
-[`/poteto-mode`](./skills/poteto-mode/SKILL.md) and [`subagent_type: "poteto-agent"`](./agents/poteto-agent.md) route through the same wrapper.
-
-pstack also ships [Comment Sicko](./agents/comment-sicko.md), a read-only comment reviewer available as `subagent_type: "Comment Sicko"`. usually invoke it through [`/no-comments`](./skills/no-comments/SKILL.md), not directly.
+T3 has no agent types, so agent instructions travel in the brief. a `poteto-mode` delegate's brief opens with "read `poteto-mode/SKILL.md` in full first". [Comment Sicko](./skills/no-comments/references/comment-sicko.md) is pasted verbatim by [`/no-comments`](./skills/no-comments/SKILL.md).
 
 ## principles
 

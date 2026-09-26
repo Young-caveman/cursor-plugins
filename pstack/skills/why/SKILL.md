@@ -59,7 +59,7 @@ Capture this as seed context (file paths, symbols, commits, PR numbers, linked t
 
 ### Discovery
 
-Before spawning investigators, list the available MCPs from the Cursor environment. Use the available-tools map when present. Otherwise inspect the `mcps/` directory Cursor exposes for enabled MCP servers.
+Before spawning investigators, list the MCP servers this harness has: the MCP tools in your own tool list first; otherwise its config (Claude Code: `claude mcp list`; Codex: `mcp_servers` in `~/.codex/config.toml` and the project's `.codex/config.toml`; OpenCode: `mcp` in `opencode.json`). Ignore `t3-code`; it is orchestration, not a source.
 
 Map each available MCP to one evidence category:
 
@@ -77,10 +77,7 @@ Aim for a complete **coverage map**, not a minimal one. Document the null, don't
 
 Launch all matching investigators in a single message so they run concurrently. Don't ask one agent to cover multiple MCPs.
 
-Subagent config (each):
-- `subagent_type`: `generalPurpose`
-- model profile: `why investigators` from the [PStack routing policy](../setup-pstack/references/model-routing.md)
-- `readonly`: `false` (agent mode). **Do not use readonly/Ask mode.** It strips MCP access, which disables MCP-backed investigators entirely. Investigators still shouldn't write anything.
+Each investigator is a `delegate_task` child per [T3 delegation](../setup-pstack/references/t3-delegation.md): `role: "research"`, a `default`-tier pool entry, and "do not edit files" in the brief. Keep the default interaction mode rather than `plan`: investigators need the harness's MCP servers, and whether plan mode keeps them is unverified per provider.
 
 Each investigator gets:
 1. The base prompt from `references/investigator-prompt.md`
@@ -120,11 +117,7 @@ If your scope assessment suggests a single-commit trivial target where the PR de
 
 ## Step 4. Synthesize
 
-Spawn one synthesizer subagent:
-
-- `subagent_type`: `generalPurpose`
-- model profile: `why synthesizer` from the PStack routing policy
-- `readonly`: `false` (agent mode). The synthesizer's quality check spot-verifies citations, which can require MCP access. Readonly/Ask mode strips MCPs and defeats that.
+Delegate one synthesizer child the same way as the investigators (default interaction mode, "do not edit files"). Its quality check spot-verifies citations, which can require MCP access.
 
 The synthesizer gets:
 1. The investigator findings, including any null results and any categories skipped with justification

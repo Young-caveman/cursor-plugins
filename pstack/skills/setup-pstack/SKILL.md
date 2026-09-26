@@ -30,7 +30,7 @@ If `~/.config/pstack/models.json` exists, read it before changing anything:
 
 ## 2. Agree on the pool
 
-Ask which discovered models belong in the pool. The pool is shared across all task roles, so one selection covers every PStack workflow; a model can also stay out. For each selected model, show the exact model ID, label, defaults, and the full reasoning choices; recommend a strongest value only when evidence establishes it, otherwise ask. The user accepts, picks another advertised value, or leaves an option at its provider default. Store only confirmed, advertised values. Do not promise billing, cost-cap, concurrency, retry, or nesting behavior; reasoning effort and pool size affect cost separately.
+Ask which discovered models belong in the pool. The pool is shared across all task roles, so one selection covers every PStack workflow; a model can also stay out. For each selected model, show the exact model ID, label, defaults, and the full reasoning choices; recommend a strongest value only when evidence establishes it, otherwise ask. The user accepts, picks another advertised value, or leaves an option at its provider default. Store only confirmed, advertised values. Ask which entries are expensive enough to keep for hard tasks only, and mark those `"tier": "escalation"`. Do not promise billing, cost-cap, concurrency, retry, or nesting behavior; reasoning effort and pool size affect cost separately.
 
 Setup is a default, not an exemption. Preserve a specialist agent's own instructions and tools, but the pool or an existing explicit authorization still governs every routed call's model. When a specialist or native path selects its own model or reasoning option, verify the effective model and options match a pool entry or the authorization before running; a changed reasoning option is an out-of-pool target. The main chat model stays unchanged.
 
@@ -54,4 +54,4 @@ python3 scripts/model_policy.py resolve --id <entry-id> --snapshot <capabilities
 
 ## 5. Report
 
-Report the providers discovered, the saved pool entries, that the policy is structurally valid and advertised as available, that invocation is unverified until real delegated work succeeds, any v1 migration left for review, and whether a new session is needed. This skill configures models only: it does not offer or create project verification skills, and role-based skills are not migrated by this revision.
+Report the providers discovered, the saved pool entries, that the policy is structurally valid and advertised as available, that invocation is unverified until real delegated work succeeds, any v1 migration left for review, and whether a new session is needed. This skill configures models only: it does not offer or create project verification skills.

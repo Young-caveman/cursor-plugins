@@ -89,8 +89,6 @@ def main(argv=None):
 
     for kind, path, detail in actions:
         print(f"{kind:8} {path.relative_to(project)}  {detail}")
-    if {"claude", "opencode"} <= set(args.harness):
-        print("note: OpenCode reads both .agents/skills and .claude/skills; duplicates are untested")
     new_exclude = None
     if exclude is not None:
         old = exclude.read_text(encoding="utf-8") if exclude.is_file() else ""

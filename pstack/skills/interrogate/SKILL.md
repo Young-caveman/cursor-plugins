@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Interrogate
 
-Spawn one reviewer per configured model to adversarially review code changes. Each model gets the same prompt and rubric. The adversarial signal comes from model diversity, not assigned personas.
+Spawn one reviewer per chosen pool entry to adversarially review code changes. Each model gets the same prompt and rubric. The adversarial signal comes from model diversity, not assigned personas.
 
 The deliverable is a synthesized verdict. Do NOT auto-apply changes.
 
@@ -33,16 +33,9 @@ Write one clear paragraph. If you're unsure about the intent, ask the user befor
 
 ## Step 3, Spawn Reviewers
 
-Launch one reviewer per `interrogate reviewers` entry in the [PStack routing policy](../setup-pstack/references/model-routing.md), extending or shrinking the Reviewer A/B/C/D labels to the configured entry count. Resolve a missing or unusable list before spawning.
+Launch one read-only reviewer per chosen pool entry, per [T3 delegation](../setup-pstack/references/t3-delegation.md). Default: one `default`-tier entry from each provider in the pool, usually 2-3 reviewers. Use more or `escalation`-tier reviewers only when the user asks or the change is high-stakes. Say which reviewers share a provider or model, since that weakens the diversity signal.
 
-The policy's ordered list determines both reviewer count and model profiles. Multiple entries may resolve to the same model; disclose that when evaluating model diversity.
-
-For each reviewer:
-- `subagent_type`: `generalPurpose`
-- model profile: the matching `interrogate reviewers` entry
-- `readonly`: `true`
-
-If the requested profile cannot be resolved or the harness rejects its model, stop that reviewer call. Report the rejected ID and valid choices, then ask for a replacement or use a fallback explicitly approved in the policy. Never silently select a higher-reasoning or "closest" model. Resolve `inherit-parent` only when the current invocation path truly inherits the parent model and effort.
+Each reviewer is a `delegate_task` child with `role: "review"`, `interactionMode: "plan"`, and "do not edit files" in the brief. If an entry fails `resolve` or the call is rejected, drop that reviewer, report the rejected entry, and continue; never swap in a stronger or "closest" model.
 
 Read `references/reviewer-prompt.md` and fill in the template with:
 1. The stated intent

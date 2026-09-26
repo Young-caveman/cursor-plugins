@@ -18,9 +18,19 @@ A child receives only its task prompt and optional `role` (`implementation`, `re
 
 ## Target
 
-1. Pick a pool entry and run `model_policy.py resolve --id <entry> --snapshot <capabilities.json>`.
-2. Pass its `providerInstanceId`, `model`, and `options` as `target`. Never omit `model` for a non-inherited provider: T3 then picks that provider's first advertised model.
-3. Where model diversity is the point (reviewers, judges, race arms), prefer entries from different providers and say when two arms share a model.
+1. List candidates with `model_policy.py list --tier default`. Use `default` entries unless the task is genuinely hard: a previous attempt failed, the change is cross-cutting or subtle, or the user asks. Only then use `--tier escalation` entries, and say why.
+2. Dry-run the chosen entry with `model_policy.py resolve --id <entry> --snapshot <capabilities.json>`.
+3. Pass its `providerInstanceId`, `model`, and `options` as `target`. Never omit `model` for a non-inherited provider: T3 then picks that provider's first advertised model.
+
+## Several models on one task
+
+- **Finding problems** (review, diagnosis, exploration): prefer entries from different providers. Differently trained models miss different things; the union of their findings is the value. Say when two arms share a model.
+- **Producing one result** (a fix, a design, an answer): one strong entry beats a mix. Mixing adds the weaker model's mistakes.
+- **Judging**: the judge checks evidence (a failing-then-passing reproduction, test output, a quoted line), not which answer sounds better. A judge that must weigh opinions needs a model at least as strong as the ones it judges.
+
+## Agent instructions
+
+T3 has no agent types. When a workflow names an agent (for example `poteto-agent` or `Comment Sicko`), read its file in `pstack/agents/` and paste its instructions at the top of the brief.
 
 ## Modes
 
