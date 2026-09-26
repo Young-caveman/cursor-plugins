@@ -30,7 +30,7 @@ T3 Code is the outer session/worktree environment, not a peer harness. Its contr
 
 In `skills/setup-pstack/scripts/`, standard library only:
 
-- `pstack_doctor.py --project <repo>` — read-only drift check between the source and one project (see 4.2). Exit 1 on any `stale` finding.
+- `pstack_doctor.py --project <repo>` — read-only drift check between the source and one project (see 4.3). Exit 1 on any `stale` finding.
 - `pstack_link.py --project <repo> --harness codex|opencode|claude … [--apply]` — reconciles links: links every source skill into the chosen harness dirs, unlinks PStack links for removed skills or deselected harnesses, never touches real directories, and keeps the links out of git with a managed block in the clone's `info/exclude`. Dry run by default. After `--apply`, the doctor reports no drift.
 
 Principle: anything checkable by reading files is a script, not an agent reading files by hand. Scripts prove *state*; only a real harness run proves *behavior*.
@@ -64,7 +64,19 @@ PStack is isolated by **directory**, not branch: git branches cannot isolate unt
 - Retired 2026-09-26: local branches `pstack-codex` (was `bedb046`) and `pstack-opencode` (was `5ac7731`), never pushed; recoverable from reflog for a while. Wisdio `eb9bc32` removed the stale `simplified-pstack-router` pointer from `AGENTS.md`.
 - `~/.config/pstack/models.json` does not exist yet.
 
-### 4.2 The problem and the fix
+### 4.2 Development routine
+
+Scripts below are in `pstack/skills/setup-pstack/scripts/`.
+
+1. **Edit skills** in this worktree (`t3-orchestration`).
+2. **If a skill was added, renamed, or removed**, relink: `pstack_link.py --project /cave/Wisdio-pstack --harness codex --harness opencode --harness claude --apply` (omit `--apply` to preview). Editing an existing skill's text needs no relink; the link already points at the live file.
+3. **Test in `/cave/Wisdio-pstack`** from a T3 thread in that folder, on the harness under test. Claude Code and Codex pick up skill edits live; **OpenCode caches skills, so start a new OpenCode session** after an edit.
+4. **Before calling a skill broken**, run `pstack_doctor.py --project /cave/Wisdio-pstack` and fix any `stale` finding first; it may be a leftover, not a defect.
+5. **Commit** the skill change here and add a row to the test log (section 8).
+
+Normal Wisdio work stays in `/cave/Wisdio`. To bring the test copy up to date: `git -C /cave/Wisdio-pstack merge develop1-engine`. Treat `/cave/Wisdio-pstack` as a test bench; code worth keeping is written in `/cave/Wisdio`.
+
+### 4.3 The problem and the fix
 
 Skill text is live through the symlinks; everything PStack *left behind* is a snapshot. After a source change the project runs new skill text against old artifacts, and nothing looks stale. Observed instances:
 
@@ -85,7 +97,7 @@ The fix has three parts:
 
 For a clean-slate test beyond `/cave/Wisdio-pstack`, create another throwaway worktree, link it with `pstack_link.py`, and point `--policy` at a scratch file. Its artifacts are born from current skills and discarded after.
 
-### 4.3 Rollback
+### 4.4 Rollback
 
 1. Code: normal git in Wisdio; never reaches this worktree.
 2. Pool: `mv ~/.config/pstack/models.json{,.bak}` — outside git.
