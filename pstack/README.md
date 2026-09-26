@@ -12,6 +12,10 @@ there's a growing sense that ai writes too much slop code. i agree. i don't want
 
 fork it. improve it. make it yours. PRs are welcome! 
 
+## migration status
+
+this personal branch has migrated the skill workflows to T3 Code and linked them into a Wisdio test checkout. `swarm` passed a real T3 run, and `interrogate` produced a three-reviewer verdict. the other workflows still need end-to-end harness runs. the latest source checks passed 72 script tests; the first real Wisdio verification skill has not been generated yet. see [AGENTS.md](../AGENTS.md) for the current handoff and [the development log](./develop-log/) for evidence.
+
 ## install
 
 pstack runs inside T3 Code with Codex, Claude Code, or OpenCode. skills are installed as symlinks from this checkout, so an edit to a skill is the edit everywhere.
@@ -243,7 +247,7 @@ a few things other setups bundle that pstack doesn't:
 
 - code slop pass: use claude code's `simplify` skill, or review the diff yourself for dead defensive code, needless abstraction, and duplicated logic.
 - driving an app: [`/create-verification-skill`](./skills/create-verification-skill/SKILL.md) writes a project-local verify skill.
-- writing a skill: use the harness's `skill-creator` skill.
+- writing a skill: use `skill-creator` when installed, or follow the [skill-authoring playbook](./skills/poteto-mode/playbooks/authoring-a-skill.md) to write `SKILL.md` directly.
 
 ## why are there no planning skills?
 

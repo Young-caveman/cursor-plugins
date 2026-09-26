@@ -42,7 +42,7 @@ Invoke [`setup-pstack`](../../skills/setup-pstack/SKILL.md) from a T3 Code threa
 
 Setup saves one shared pool at `~/.config/pstack/models.json`, and one setup covers every harness. Each entry has a unique `id`, a `providerInstanceId`, a model, its confirmed options, and an optional `tier` (`default` or `escalation`). Keep at least one `default` entry for routine work; setup asks which others are expensive enough to reserve for hard tasks. There are no per-role tables and no required cost, concurrency, or retry settings. Setup does not raise `serviceTier`, `fastMode`, or other non-reasoning options on its own and does not change your main chat model. Reasoning options differ per provider (Codex `reasoningEffort`, OpenCode `variant`, Claude `effort`), so a level never carries from one model to another. T3's Claude adapter can also remap some effort values, so check what actually ran.
 
-You can inspect the pool with `python3 skills/setup-pstack/scripts/model_policy.py validate`, `list`, and `ready --snapshot <capabilities.json>`. These prove structure and that each entry is currently advertised. They do not prove a target runs; only delegated work that succeeds does.
+You can inspect the pool with `python3 skills/setup-pstack/scripts/model_policy.py validate`, `list`, and `ready --snapshot <capabilities.json>`. `validate` checks structure and requires at least one `default` entry; `ready` checks advertised availability against a saved capabilities snapshot. Before each delegated call, resolve the entry against live capabilities. Only a successful delegated run proves the target works.
 
 The pool is the model-setup contract: a task may use one entry or several. Reviewing and diagnosing prefer entries from different providers, since differently trained models miss different things. Producing one result prefers one strong entry, and judges check evidence rather than opinions. A model outside the pool needs your explicit authorization for that task; a one-off target is never added to the pool automatically. PStack does not enforce spending limits.
 
@@ -60,7 +60,7 @@ Pick something real but small, and describe it the way you'd describe it to a co
 Use poteto-mode: add a --json flag to this command. Text output stays byte-identical. Verify both.
 ```
 
-`poteto-mode` refuses to start until `model_policy.py validate` passes, so run `setup-pstack` first.
+`poteto-mode` refuses to start until `model_policy.py validate` passes, so run `setup-pstack` first. It resolves a chosen pool entry against live capabilities before delegation.
 
 Watch the todo list. Its first items are the matched playbook's steps copied in, the Feature playbook for this prompt. If poteto-mode skips a step, the step stays in the list with `skip: <reason>`, so you can see what it chose not to do.
 

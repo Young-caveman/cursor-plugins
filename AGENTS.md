@@ -1,6 +1,6 @@
 # PStack handoff
 
-Current state and rules for working on PStack. History, research, and test results live in `pstack/develop-log/` (newest file first). The user's latest instructions take precedence.
+Current state and rules for working on PStack as of 2026-09-26. History, research, and test results live in `pstack/develop-log/` (newest file first). The user's latest instructions take precedence.
 
 ## Goal
 
@@ -14,7 +14,7 @@ Turn PStack (originally for Cursor) into the user's personal skill set for Codex
 - Invocation: principle skills, `unslop`, `typescript-best-practices`, and `setup-pstack` may auto-trigger; the 21 workflow skills keep `disable-model-invocation: true` (Claude-only field).
 - PStack writes nothing tracked into a user project: no lock files, no `.gitignore` entries, no pointer lines in the project's `AGENTS.md`.
 - Anything checkable by reading files is a script, not manual inspection. Scripts prove state; only a harness run proves behavior.
-- Spawned agents follow `setup-pstack/references/t3-delegation.md`: `delegate_task` children share the parent's checkout; parallel writers get `t3_thread_launch` worktrees; briefs stand alone.
+- Spawned agents follow `setup-pstack/references/t3-delegation.md`: `delegate_task` takes `target`, `mode`, and `clientRequestId` and shares the parent's checkout; parallel writers get `t3_thread_launch` worktrees with `modelSelection`, not those delegate fields. Briefs stand alone.
 - Keep skill text short. Current models over-follow ceremony (forced todos, always-test, stop-for-review).
 - Keep work under `pstack/`. This repo is sparse-checkout (`/*`, `!/*/`, `/pstack/`). Run `git sparse-checkout add <dir>` before creating a new top-level dir; never disable sparse-checkout.
 - The user runs installs and harness tests. Prefer free OpenCode models (Muse Spark 1.3 Free) for tests and delegated research.
@@ -51,7 +51,12 @@ Update the test copy: `git -C /cave/Wisdio-pstack merge develop1-engine`.
 ## State and gaps
 
 - Discovery works in all three harnesses; the model pool is saved and every model in it answered a delegated call.
-- All workflows are migrated to T3 delegation (`38550b1`). Real runs so far: `swarm` (passed), `interrogate` (see develop-log). The rest are migrated but unexercised.
+- All workflows are migrated to T3 delegation (`38550b1`). Onboarding and stale references were repaired in `178a2d7`; the review follow-up in `bc5bb53` corrected launch arguments, added skill-authoring fallback, and tightened pool/reviewer/verification behavior. The three-reviewer `/interrogate` verdict is recorded in `pstack/develop-log/2026-09-26T120832Z-progress.md`.
+- State checks after `bc5bb53`: 72 script tests passed (50 model policy, 13 doctor, 6 link, 3 discovery); pool validation, Wisdio-pstack doctor, skill-link resolution, and `git diff --check` passed. These checks do not prove workflow behavior.
+- Real T3 runs so far: `swarm` passed; `interrogate` ran and returned a three-reviewer verdict. The remaining workflows have not been exercised end to end in the harnesses.
+- A pool with no `default` entry now fails validation. Before each delegated call, resolve the chosen entry against live T3 capabilities; structural validation alone does not establish availability.
+- Skill authoring uses `skill-creator` when installed and direct `SKILL.md` authoring otherwise. Do not assume OpenCode has that skill.
+- `disable-model-invocation: true` only gates Claude Code. Codex and the installed OpenCode do not enforce manual-only workflow invocation; their docs must state this limitation.
 - Claude Code drops most skill descriptions when the list is long: 23 of 25 PStack skills reach its model as a bare name. Descriptions need shortening.
 - Plan mode's read-only enforcement and whether it keeps MCP servers are unverified per provider; `why` and `reflect` avoid plan mode for that reason.
 - `make-bot-ui` targets a Grok Bot webhook on `cursor.sh`; left as is.
@@ -60,7 +65,7 @@ Update the test copy: `git -C /cave/Wisdio-pstack merge develop1-engine`.
 
 ## Next
 
-1. First real Wisdio task: plan a macOS verification skeleton with `/create-verification-skill` in `/cave/Wisdio-pstack`.
+1. First real Wisdio task: run `/create-verification-skill` in `/cave/Wisdio-pstack` for a macOS verification skeleton, then prove its generated instructions on one feature. This is still pending; the user runs harness tests.
 2. Shorten skill descriptions so Claude keeps them (listing budget ~8,000 characters).
 3. Later: evals and audits to pick models per task (user's plan; not now).
 
