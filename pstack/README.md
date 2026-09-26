@@ -1,62 +1,58 @@
 # pstack
 
-i'm [poteto](https://x.com/poteto). i'm not a president or ceo, but i've worked with millions of lines of code at Meta, Netflix, and Cursor. i'm also on the react core team where i help build and maintain react compiler.
+A personal skill set for doing rigorous work with coding agents under T3 Code, the harness control surface that drives Codex, Claude Code, and OpenCode from one session. It began as [poteto](https://x.com/poteto)'s skill set — she wrote it after working on millions of lines of code at Meta, Netflix, and Cursor, and on the React core team — and this fork keeps her principles while wiring every workflow to T3's orchestration.
 
-there's a growing sense that ai writes too much slop code. i agree. i don't want to ship like a team of twenty slop artists. throughput without quality is not a goal i aspire to. if you want to go fast, go deep first. 
+**Go deep before parallel.** AI writes too much slop code; throughput without quality is not the goal. Trust one agent to write good, verifiable code, then parallelize with confidence.
 
-**pstack is my answer.** it's a set of reusable engineering skills for doing rigorous work with coding agents: go deep, parallelize carefully, and verify the result. the goal is not to maximize loc, in fact it's the opposite. pstack helps you write less, but higher quality code.
+**Use the right model for the work.** T3's `orchestrator_capabilities` reports what can run, and every workflow delegates through `delegate_task` or `t3_thread_launch`. Models come from one shared pool, so work lands where its strengths help, and several pool entries can collaborate on one task when different strengths matter.
 
-**pstack gives you fearless parallelism.** when you can go deep on one agent and trust it to write good, verifiable code, you can truly parallelize with confidence. start multiple agents up with `poteto-mode` and trust that they'll apply rigorous engineering principles to their work.
+**Write less, better code.** The goal is not to maximize loc. The skills enforce deep understanding, deliberate structure, and verified results.
 
-**use the right model for the work.** every model has its strengths and weaknesses. PStack routes work across the models available to your session, and several workflows use multiple models when their different strengths help.
+## Migration status
 
-fork it. improve it. make it yours. PRs are welcome! 
+This personal branch has migrated the skill workflows to T3 Code and linked them into a Wisdio test checkout. `swarm` passed a real T3 run, and `interrogate` produced a three-reviewer verdict. The other workflows still need end-to-end harness runs. The latest source checks passed 72 script tests; the first real Wisdio verification skill has not been generated yet. See [AGENTS.md](../AGENTS.md) for the current handoff and [the development log](./develop-log/) for evidence.
 
-## migration status
+## Install
 
-this personal branch has migrated the skill workflows to T3 Code and linked them into a Wisdio test checkout. `swarm` passed a real T3 run, and `interrogate` produced a three-reviewer verdict. the other workflows still need end-to-end harness runs. the latest source checks passed 72 script tests; the first real Wisdio verification skill has not been generated yet. see [AGENTS.md](../AGENTS.md) for the current handoff and [the development log](./develop-log/) for evidence.
+PStack runs inside T3 Code with Codex, Claude Code, or OpenCode. Skills are installed as symlinks from this checkout, so an edit to a skill is the edit everywhere.
 
-## install
-
-pstack runs inside T3 Code with Codex, Claude Code, or OpenCode. skills are installed as symlinks from this checkout, so an edit to a skill is the edit everywhere.
-
-link them into a project with the bundled script, run from this `pstack` directory (dry run without `--apply`; the other scripts below live beside it in `skills/setup-pstack/scripts/`):
+Link them into a project with the bundled script, run from this `pstack` directory (dry run without `--apply`; the other scripts below live beside it in `skills/setup-pstack/scripts/`):
 
 ```bash
 python3 skills/setup-pstack/scripts/pstack_link.py --project /path/to/repo \
   --harness codex --harness opencode --harness claude --apply
 ```
 
-- codex reads `.agents/skills`. claude code reads only `.claude/skills`, not `.agents/`. opencode reads both and de-duplicates by name. pass only the `--harness` flags you use.
-- the links stay out of git through a managed block in the repo's `.git/info/exclude`. pstack adds no lock file, no `.gitignore` entry, and no line in your project's `AGENTS.md`.
-- rerun the command after you add, rename, or remove a skill. text edits need no relinking: claude code and codex see them live; opencode caches skills, so start a new session.
-- `pstack_doctor.py --project /path/to/repo` reports drift between the source and a project. `harness_discovery.py --project /path/to/repo` shows which skills codex and claude code actually offered their model in the newest session there.
+- Codex reads `.agents/skills`. Claude Code reads only `.claude/skills`, not `.agents/`. OpenCode reads both and de-duplicates by name. Pass only the `--harness` flags you use.
+- The links stay out of git through a managed block in the repo's `.git/info/exclude`. PStack adds no lock file, no `.gitignore` entry, and no line in your project's `AGENTS.md`.
+- Rerun the command after you add, rename, or remove a skill. Text edits need no relinking: Claude Code and Codex see them live; OpenCode caches skills, so start a new session.
+- `pstack_doctor.py --project /path/to/repo` reports drift between the source and a project. `harness_discovery.py --project /path/to/repo` shows which skills Codex and Claude Code actually offered their model in the newest session there.
 - `pstack_link.py` handles project installs. Global installation is not covered by this script.
 
-## get started
+## Get started
 
-two steps:
+Two steps:
 
-1. run [`setup-pstack`](./skills/setup-pstack/SKILL.md) in a T3 Code thread and choose the models that go in one shared pool, with the reasoning option you confirm for each. one setup covers every harness.
-2. invoke [`poteto-mode`](./skills/poteto-mode/SKILL.md) whenever you're doing anything that requires rigor. in claude code, type `/poteto-mode`; in codex, `$poteto-mode`; in opencode, ask the agent to use the `poteto-mode` skill.
+1. Run [`setup-pstack`](./skills/setup-pstack/SKILL.md) in a T3 Code thread and choose the models that go in one shared pool, with the reasoning option you confirm for each. One setup covers every harness.
+2. Invoke [`poteto-mode`](./skills/poteto-mode/SKILL.md) whenever you're doing anything that requires rigor. In Claude Code, type `/poteto-mode`; in Codex, `$poteto-mode`; in OpenCode, ask the agent to use the `poteto-mode` skill.
 
-> **delegation.** every workflow that spawns agents uses T3's `orchestrator_capabilities` and the tools in [`t3-delegation.md`](./skills/setup-pstack/references/t3-delegation.md): cheap `default`-tier pool entries normally, `escalation` entries only for hard work. `delegate_task` children share the parent's checkout; parallel writers get their own worktree through `t3_thread_launch`.
+> **Delegation.** Every workflow that spawns agents uses T3's `orchestrator_capabilities` and the tools in [`t3-delegation.md`](./skills/setup-pstack/references/t3-delegation.md): cheap `default`-tier pool entries normally, `escalation` entries only for hard work. `delegate_task` children share the parent's checkout; parallel writers get their own worktree through `t3_thread_launch`.
 
-> **invocation.** the principles, `unslop`, `typescript-best-practices`, and `setup-pstack` may trigger on their own. the twenty-one workflow skills carry `disable-model-invocation: true`, which only claude code honours: there they run only when you type `/name`. codex and opencode ignore that field.
+> **Invocation.** The principles, `unslop`, `typescript-best-practices`, and `setup-pstack` may trigger on their own. The twenty-one workflow skills carry `disable-model-invocation: true`, which only Claude Code honours: there they run only when you type `/name`. Codex and OpenCode ignore that field.
 
-skill names shown with a leading slash below are shorthand for the harness's skill selector; they are not all literal slash commands.
+Skill names shown with a leading slash below are shorthand for the harness's skill selector; they are not all literal slash commands.
 
-new here? the [pstack guide](./docs/guide/README.md) walks you through a first real task, from setup and prompting through verification and overnight runs.
+New here? The [pstack guide](./docs/guide/README.md) walks you through a first real task, from setup and prompting through verification and overnight runs.
 
-that's it. the other skills are situational; the mode skill uses them for you as needed. setup discovers the models your T3 Code thread can delegate to and saves them in one user-owned pool at `~/.config/pstack/models.json`.
+That's it. The other skills are situational; the mode skill uses them for you as needed. Setup discovers the models your T3 Code thread can delegate to and saves them in one user-owned pool at `~/.config/pstack/models.json`.
 
-## usage
+## Usage
 
-use [`poteto-mode`](./skills/poteto-mode/SKILL.md) at the start of a task. It reads your request, picks from a set of playbooks, and runs the other skills as the steps need them.
+Use [`poteto-mode`](./skills/poteto-mode/SKILL.md) at the start of a task. It reads your request, picks from a set of playbooks, and runs the other skills as the steps need them.
 
-### just use [`poteto-mode`](./skills/poteto-mode/SKILL.md)
+### Just use [`poteto-mode`](./skills/poteto-mode/SKILL.md)
 
-this skill is the main shortcut. i use it whenever i need the agent to do rigorous engineering work. it comes with twenty-three playbooks:
+This skill is the main shortcut. Use it whenever the agent is doing anything that requires rigor. It comes with twenty-three playbooks:
 
 ```
 Use poteto-mode: this PR has a subtle bug where the scroll drifts every 750ms even when idle. Reproduce it first.
@@ -99,21 +95,21 @@ Use poteto-mode: I'm going to bed. Land the stack even if CI flakes. I want ever
 
 
 
-when invoked it:
+When invoked it:
 
-1. matches your task to a [playbook](./skills/poteto-mode/playbooks/) and opens a todo list whose first items are its steps, copied in verbatim. it refuses to start until `setup-pstack` has saved a valid pool.
-2. routes to the other skills as the steps fire.
-3. writes unslopped replies framed for the consumer and the maintainer.
+1. Matches your task to a [playbook](./skills/poteto-mode/playbooks/) and opens a todo list whose first items are its steps, copied in verbatim. It refuses to start until `setup-pstack` has saved a valid pool.
+2. Routes to the other skills as the steps fire.
+3. Writes unslopped replies framed for the consumer and the maintainer.
 
-the full rules and playbooks live in [`skills/poteto-mode/SKILL.md`](./skills/poteto-mode/SKILL.md).
+The full rules and playbooks live in [`skills/poteto-mode/SKILL.md`](./skills/poteto-mode/SKILL.md).
 
-[`/poteto-mode`](./skills/poteto-mode/SKILL.md) is also a sticky mode: once entered it stays on across turns, applying itself when a playbook matches or the task needs rigor and staying out of the way otherwise. opt out any time by saying so.
+[`/poteto-mode`](./skills/poteto-mode/SKILL.md) is also a sticky mode: once entered it stays on across turns, applying itself when a playbook matches or the task needs rigor and staying out of the way otherwise. Opt out any time by saying so.
 
-for long runs, the [autonomous run playbook](./skills/poteto-mode/playbooks/autonomous-run.md) wakes itself with T3's `schedule_task` or, in claude code, `/loop`. you can leave it working for many hours without sacrificing rigor.
+For long runs, the [autonomous run playbook](./skills/poteto-mode/playbooks/autonomous-run.md) wakes itself with T3's `schedule_task` or, in Claude Code, `/loop`. You can leave it working for many hours without sacrificing rigor.
 
-## skills
+## Skills
 
-[`/poteto-mode`](./skills/poteto-mode/SKILL.md) runs most of these for you when a step needs them (`how`, `why`, `architect`, `arena`, `swarm`, `interrogate`, `unslop`, `no-comments`, `technical-writing`, `tdd`, and the principles). the table below is for when you want one directly:
+[`/poteto-mode`](./skills/poteto-mode/SKILL.md) runs most of these for you when a step needs them (`how`, `why`, `architect`, `arena`, `swarm`, `interrogate`, `unslop`, `no-comments`, `technical-writing`, `tdd`, and the principles). The table below is for when you want one directly:
 
 ```
 /how do we cancel runs? do we have an n+1 when we look up every run to cancel?
@@ -157,9 +153,9 @@ for long runs, the [autonomous run playbook](./skills/poteto-mode/playbooks/auto
 
 
 
-### examples
+### Examples
 
-mostly i type [`/poteto-mode`](./skills/poteto-mode/SKILL.md) at the start of a task and let it route to a playbook. the other skills fire as the steps need them. a few i reach for directly.
+Type [`/poteto-mode`](./skills/poteto-mode/SKILL.md) at the start of a task and let it route to a playbook. The other skills fire as the steps need them. A few you may want directly.
 
 
 <details>
@@ -202,13 +198,13 @@ automate-me:       /automate-me
 
 </details>
 
-## delegated agents
+## Delegated agents
 
-T3 has no agent types, so agent instructions travel in the brief. a `poteto-mode` delegate's brief opens with "read `poteto-mode/SKILL.md` in full first". [Comment Sicko](./skills/no-comments/references/comment-sicko.md) is pasted verbatim by [`/no-comments`](./skills/no-comments/SKILL.md).
+T3 has no agent types, so agent instructions travel in the brief. A `poteto-mode` delegate's brief opens with "read `poteto-mode/SKILL.md` in full first". [Comment Sicko](./skills/no-comments/references/comment-sicko.md) is pasted verbatim by [`/no-comments`](./skills/no-comments/SKILL.md).
 
-## principles
+## Principles
 
-twenty-three short skills, one principle each. `poteto-mode` indexes them inline and reads that index at task start. the standalone files are there so other skills can reference a principle by name, and so the index can point at the full rule for each.
+Twenty-three short skills, one principle each. `poteto-mode` indexes them inline and reads that index at task start. The standalone files are there so other skills can reference a principle by name, and so the index can point at the full rule for each.
 
 <details>
 <summary>all twenty-three principles</summary>
@@ -241,30 +237,30 @@ twenty-three short skills, one principle each. `poteto-mode` indexes them inline
 
 </details>
 
-## not shipped here
+## Not shipped here
 
-a few things other setups bundle that pstack doesn't:
+A few things other setups bundle that PStack doesn't:
 
-- code slop pass: use claude code's `simplify` skill, or review the diff yourself for dead defensive code, needless abstraction, and duplicated logic.
+- code slop pass: use Claude Code's `simplify` skill, or review the diff yourself for dead defensive code, needless abstraction, and duplicated logic.
 - driving an app: [`/create-verification-skill`](./skills/create-verification-skill/SKILL.md) writes a project-local verify skill.
 - writing a skill: use `skill-creator` when installed, or follow the [skill-authoring playbook](./skills/poteto-mode/playbooks/authoring-a-skill.md) to write `SKILL.md` directly.
 
-## why are there no planning skills?
+## Why are there no planning skills?
 
-the harnesses offer plan modes, but their read-only enforcement and MCP access under T3 have not been verified for every provider. if you want a plan, [`/poteto-mode`](./skills/poteto-mode/SKILL.md) covers it without requiring plan mode.
+The harnesses offer plan modes, but their read-only enforcement and MCP access under T3 have not been verified for every provider. If you want a plan, [`/poteto-mode`](./skills/poteto-mode/SKILL.md) covers it without requiring plan mode.
 
-## make it yours
+## Make it yours
 
-`poteto-mode` is my style. you may not want exactly that.
+`poteto-mode` encodes poteto's style. You may not want exactly that.
 
-type [`/automate-me`](./skills/automate-me/SKILL.md). it mines your recent T3 threads (falling back to harness logs), drafts a `<your-name>-mode` skill from how you've actually worked, and routes through pstack underneath. you keep pstack as the base and end up with your own routing skill alongside `poteto-mode`.
+Type [`/automate-me`](./skills/automate-me/SKILL.md). It mines your recent T3 threads (falling back to harness logs), drafts a `<your-name>-mode` skill from how you've actually worked, and routes through PStack underneath. You keep PStack as the base and end up with your own routing skill alongside `poteto-mode`.
 
-models are configurable too. use [`setup-pstack`](./skills/setup-pstack/SKILL.md). it keeps one user-owned pool at `~/.config/pstack/models.json` (optionally tiered `default` or `escalation`), discovered from what your T3 Code thread can actually run. every workflow that spawns agents draws from it; the pool contract is that a task may mix entries when different strengths help, a model outside it needs your explicit go-ahead, and setup never upgrades a saved choice on its own.
+Models are configurable too. Use [`setup-pstack`](./skills/setup-pstack/SKILL.md). It keeps one user-owned pool at `~/.config/pstack/models.json` (optionally tiered `default` or `escalation`), discovered from what your T3 Code thread can actually run. Every workflow that spawns agents draws from it; the pool contract is that a task may mix entries when different strengths help, a model outside it needs your explicit go-ahead, and setup never upgrades a saved choice on its own.
 
-## automations
+## Automations
 
-pstack also ships a dormant [benny automation pack](./automations/benny/), written for Cursor automations and not adapted to T3 Code. treat it as untested here.
+PStack also ships a dormant [benny automation pack](./automations/benny/), written for Cursor automations and not adapted to T3 Code. Treat it as untested here.
 
-## license
+## License
 
 MIT
