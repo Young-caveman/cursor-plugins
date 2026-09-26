@@ -21,11 +21,13 @@ The N candidates will receive the same prompt, so the prompt is the contract.
 
 ## Phase B: Fan out
 
-Launch all N in one message (async), each with a standalone brief: the task, the path to the shared grounding, its own output location, and instructions to produce both the artifact and a short rationale. End the turn; completions wake you.
+Launch `delegate_task` candidates with `mode: "async"`; launch worktree candidates with `t3_thread_launch`, which has no `mode` parameter. Each gets a standalone brief: the task, the path to the shared grounding, its own output location, and instructions to produce both the artifact and a short rationale. End the turn; follow launched threads with `t3_thread_wait` and `t3_thread_read`.
 
 Each rationale names the alternatives the candidate considered and what it rejected.
 
 If a candidate fails to produce output, proceed with N-1 and note the dropout in the synthesis record.
+
+If only one candidate remains, there is no comparison or graft. Verify that artifact and report the arena as degraded.
 
 ## Phase C: Cross-judge
 

@@ -37,6 +37,8 @@ Launch one read-only reviewer per chosen pool entry, per [T3 delegation](../setu
 
 Each reviewer is a `delegate_task` child with `role: "review"`, `interactionMode: "plan"`, and "do not edit files" in the brief. If an entry fails `resolve` or the call is rejected, drop that reviewer, report the rejected entry, and continue; never swap in a stronger or "closest" model.
 
+If fewer than two distinct providers complete, label the result a single-provider review, not a multi-model interrogation. Report the missing diversity and do not claim consensus.
+
 Read `references/reviewer-prompt.md` and fill in the template with:
 1. The stated intent
 2. The diff or file contents

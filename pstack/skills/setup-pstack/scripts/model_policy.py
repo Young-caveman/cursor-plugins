@@ -97,6 +97,10 @@ def validate(policy):
                 isinstance(value, bool) or is_token(value),
                 f"pool entry {entry_id}: option {key} must be a nonempty token or boolean",
             )
+    require(
+        any(entry.get("tier", "default") == "default" for entry in pool),
+        "pool needs at least one default-tier entry",
+    )
     return policy
 
 

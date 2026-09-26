@@ -260,6 +260,14 @@ class ValidateTest(unittest.TestCase):
             model_policy.validate(policy)
         self.assertIn("tier", str(caught.exception))
 
+    def test_all_escalation_pool_rejected(self):
+        policy = pool_policy()
+        for entry in policy["pool"]:
+            entry["tier"] = "escalation"
+        with self.assertRaises(model_policy.PolicyError) as caught:
+            model_policy.validate(policy)
+        self.assertIn("default-tier", str(caught.exception))
+
     def test_list_filters_by_tier_and_resolve_reports_it(self):
         policy = pool_policy()
         policy["pool"][0]["tier"] = "escalation"

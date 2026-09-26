@@ -18,13 +18,13 @@ Fan out N parallel workers through T3. They cover separate slices, race the same
 
 ## 2. Fan out
 
-Launch all N in one message, `mode: "async"`, each with a stable `clientRequestId` (`swarm-<slug>-<n>`). Read-only workers get `interactionMode: "plan"`. Then end the turn; completions wake you.
+Launch read-only `delegate_task` workers with `mode: "async"`, a stable `clientRequestId` (`swarm-<slug>-<n>`), and `interactionMode: "plan"`. Launch each writer with `t3_thread_launch` in its own worktree, passing the resolved entry as `modelSelection`; that tool has no `mode` or `clientRequestId`. After a lost launch response, inspect `t3_thread_list` before retrying. Then end the turn; follow launched threads with `t3_thread_wait` and `t3_thread_read`.
 
 Every brief stands alone, since a worker sees nothing but its brief: goal, scope, the exact slice or race arm, how to verify, and what to report. Reports start with `PASS`, `ISSUES`, or `BLOCKED` and cite evidence.
 
 ## 3. Aggregate
 
-Read each result with `task_status` (or `t3_thread_read` for launched worktree threads). Coverage needs a result for every slice; a race applies the rule declared in step 1. A failed or silent worker is a dropout: continue with N−1 and note it. Check claims against evidence before trusting them; don't paste raw worker output.
+Read delegated results with `task_status`, or launched worktree threads with `t3_thread_wait` and `t3_thread_read`. Coverage needs a result for every slice; a race applies the rule declared in step 1. A failed or silent worker is a dropout: continue with N−1 and note it. Check claims against evidence before trusting them; don't paste raw worker output.
 
 ## 4. Report
 

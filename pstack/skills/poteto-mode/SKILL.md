@@ -10,7 +10,7 @@ reminder: New task? Playbook match or rigor needed -> apply /poteto-mode. Casual
 
 # Poteto mode
 
-**Entry gate.** Before any of this applies, run `../setup-pstack/scripts/model_policy.py validate`. If it fails or `~/.config/pstack/models.json` is missing, stop and tell the user to run **setup-pstack** first. Do not enter poteto-mode, and do not substitute a one-off explicit model choice to bypass the gate. The pool is shared by every harness, so one setup covers all of them.
+**Entry gate.** Before any of this applies, run `../setup-pstack/scripts/model_policy.py validate`. If it fails or `~/.config/pstack/models.json` is missing, stop and tell the user to run **setup-pstack** first. This checks structure; before each delegated call, resolve its pool entry against live `orchestrator_capabilities` per [T3 delegation](../setup-pstack/references/t3-delegation.md). Do not substitute a one-off explicit model choice to bypass the gate. The pool is shared by every harness, so one setup covers all of them.
 
 ## Non-negotiables
 
@@ -25,11 +25,11 @@ Remaining triggers:
 - Parallel fan-out → the **swarm** skill for coverage matrices, races, gauntlets, and exploration partitions. Use **arena** for design or code bakeoffs with base selection and grafting.
 - Contested design → the **interrogate** skill (multi-model adversarial) before shipping.
 - Nontrivial multi-step → write the throughput checkpoint (Feature step 3).
-- Any prose surface → the **unslop** skill. Your reply is a prose surface. Write it per **Writing the reply**. Agent-facing prose also follows the harness's `skill-creator` skill.
+- Any prose surface → the **unslop** skill. Your reply is a prose surface. Write it per **Writing the reply**. For agent-facing prose, use `skill-creator` when installed, otherwise follow `playbooks/authoring-a-skill.md`.
 - Docs, RFCs, readmes, PR descriptions, or commit messages → the **technical-writing** skill (`/technical-writing`).
 - Before commit → a code slop pass over the diff: Claude Code's `simplify` skill where available; otherwise review the diff yourself for dead defensive code, needless abstraction, and duplicated logic.
 - Before review → the **no-comments** skill (`/no-comments`).
-- Shipping UI / IDE / CLI → the project's verification skill (`verify-<app>`, made by `/create-verification-skill`). If the project has none, create it first. For bug fixes, reproduce first on the same surface yourself. Hand to the user only under the narrow Bug fix step 1 exception.
+- Shipping UI / IDE / CLI → the project's verification skill (`verify-<app>`). If the project has none, read `../create-verification-skill/SKILL.md` and create it first; a poteto-mode run may route to that manual workflow. For bug fixes, reproduce first on the same surface yourself. Hand to the user only under the narrow Bug fix step 1 exception.
 - Any PR-status request → the **Babysit** playbook (`playbooks/babysit.md`), even when another installed skill's description matches the same words. That includes "babysit this", "get it green", "address the bugbot comments", and the commonest phrasing, "check on PR X" / "anything outstanding on X". Never triggered by merely opening a PR. Declare its mode before polling. The playbook's step 1 owns the request-to-mode mapping. Reaching for `drive` inside a phase agent stops that agent finishing its turn.
 - Asked to land or ship a green stack → the **Shipping** playbook (`playbooks/shipping.md`). Green is not safe. Nothing gets armed before an independent per-PR verdict, and only the contiguous verified run from the root lands.
 - Bugbot or the agentic security review commented → skeptical posture. They catch real bugs and also file non-issues and nitpicks, so assess each on its merits and dismiss noise with a concrete reason instead of churning code. Triage fix / dismiss / ask per `references/bugbot-triage.md`.

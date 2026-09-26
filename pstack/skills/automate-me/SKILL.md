@@ -1,6 +1,6 @@
 ---
 name: automate-me
-description: "Use for \"automate me\", \"create/update/refresh my -mode skill\", \"turn/capture my preferences or working style into a skill\", or wanting agents to follow how the user works. Drafts or revises a personal -mode skill via skill-creator + unslop, optionally pulling fresh evidence from recent transcripts."
+description: "Use for \"automate me\", \"create/update/refresh my -mode skill\", \"turn/capture my preferences or working style into a skill\", or wanting agents to follow how the user works. Drafts or revises a personal -mode skill from recent transcripts."
 disable-model-invocation: true
 ---
 
@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 A guided flow for turning the user's working conventions into a skill agents will follow. The output is one `-mode` skill tailored to them (e.g. `jay-mode`, `priya-mode`).
 
-This skill orchestrates three others: an inline mining pass (see step 1), the harness's `skill-creator` skill (authoring), and the **unslop** skill (prose discipline). It sequences them. It doesn't replace them.
+This skill sequences a history-mining pass, skill authoring, and **unslop**. Use `skill-creator` for authoring when installed; otherwise follow the [authoring playbook](../poteto-mode/playbooks/authoring-a-skill.md).
 
 ## Flow
 
@@ -64,17 +64,17 @@ The **poteto-mode** skill shows the shape. Read it for granularity. Don't copy i
 
 ### 4. Draft the skill
 
-Use the harness's `skill-creator` skill to author the skill. Placement:
+Use `skill-creator` when installed; otherwise author directly per the [authoring playbook](../poteto-mode/playbooks/authoring-a-skill.md). Placement:
 
-- Path: preserve an existing mode skill's location. For a new mode that should follow the user everywhere, put it in the PStack source (`skills/<handle>-mode/SKILL.md`) and relink projects with `pstack_link.py`. For a project-only mode, use `.agents/skills/<handle>-mode/SKILL.md` and link it into `.claude/skills/` for Claude Code.
+- Path: preserve an existing mode skill's location. For a new mode that should follow the user everywhere, put it in the PStack source (`skills/<handle>-mode/SKILL.md`) and relink projects with `setup-pstack/scripts/pstack_link.py`. For a project-only mode, use `.agents/skills/<handle>-mode/SKILL.md` and link it into `.claude/skills/` for Claude Code.
 - Handle: the user's first name or chosen identifier.
 - Frontmatter `description`: trigger on their name + `/<handle>-mode` + "work in their style", not on generic keywords like "write code" or "review PR".
-- Frontmatter formatting: follow `skill-creator`'s YAML rules. Keep `description` as one YAML scalar. Quote it or use `description: >-` with indented continuation lines when punctuation or wrapping requires it.
+- Frontmatter formatting: keep `description` as one YAML scalar. Quote it or use `description: >-` with indented continuation lines when punctuation or wrapping requires it.
 - Frontmatter `disable-model-invocation: true` by default. Opt out only if the user explicitly wants their mode to apply on every turn.
 
 ### 5. Iterate on prose
 
-Apply the **unslop** skill and `skill-creator`'s writing guidelines to every line.
+Apply the **unslop** skill to every line. When `skill-creator` is installed, follow its writing guidelines too.
 
 Show the draft to the user and take feedback. Expect multiple iterations. Cut ruthlessly. A mode skill is not a manual.
 
@@ -99,6 +99,5 @@ Run a description-optimization loop only if the skill's trigger accuracy turns o
 
 ## When not to use
 
-- User wants a task-specific skill (not working conventions): `skill-creator` alone, no mining required.
+- User wants a task-specific skill (not working conventions): use `skill-creator` when installed, or the [authoring playbook](../poteto-mode/playbooks/authoring-a-skill.md), with no mining.
 - User wants to capture one narrow workflow (e.g. "how I write commit messages"). That's a regular skill, not a mode skill.
-
