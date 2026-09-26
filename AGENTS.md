@@ -44,9 +44,9 @@ Verified from that source on 2026-09-27:
 | this worktree (`t3-orchestration`) | PStack source; edit skills here |
 | `/cave/t3code` (`yash/swiftui-orchestrator-v2-support`) | T3 fork source; read-only reference for T3 behavior, never edited from PStack work |
 | `/cave/Wisdio` (`develop1-engine`) | normal Wisdio work; no PStack |
-| Mac `~/coding/Wisdio` (`develop1-engine`, via `ssh mac`) | normal Wisdio work on the Mac; no PStack |
-| Mac `~/coding/Wisdio-pstack` (`pstack-test`) | Mac test bench: worktree of the Mac's Wisdio, linked to the installed copy below |
-| Mac `~/.local/share/pstack/` | installed PStack: sparse clone of `origin` `main` (`pstack/` only), updated by `git pull`, never edited (see [Two machines](#two-machines)) |
+| Mac `~/coding/Wisdio` (`develop1-engine`, via `ssh mac`) | normal Wisdio work on the Mac; sees the user-level PStack like every Mac project |
+| Mac `~/coding/Wisdio-pstack` (`pstack-test`) | Mac test bench: worktree of the Mac's Wisdio, no PStack links (they'd duplicate the user-level install) |
+| Mac `~/.local/share/pstack/` | the user's own clone of `origin` `main`, installed user-level with `npx skills add -g` per the README (see [Two machines](#two-machines)) |
 | `/cave/Wisdio-pstack` (`pstack-test`) | **test bench only** — Wisdio + PStack links in `.agents/skills` (Codex, OpenCode) and `.claude/skills` (Claude Code). Wisdio here is just the app under test; PStack stays project-agnostic and never mentions Wisdio in its own docs or skills. |
 
 ## Routine
@@ -64,11 +64,10 @@ Update the test copy: `git -C /cave/Wisdio-pstack merge develop1-engine`.
 
 ## Two machines
 
-The Mac has an installed PStack but no PStack source: edit PStack only here. Wisdio stays in sync only through commits on GitHub `develop1-engine`; uncommitted work and each machine's local `pstack-test` branch never travel. Mac checked 2026-09-27 in a Mac thread: environment, skills, links, and doctor correct; a Claude delegation failed on login.
+The Mac runs PStack as a normal user would: the README's user-level install (clone to `~/.local/share/pstack`, `npx skills add -g`), which the user does by hand. User decision 2026-09-27: the Mac is the new-user test, so agents don't install, link, or configure PStack there; report gaps in the README instead. Edit PStack only here. Wisdio stays in sync only through commits on GitHub `develop1-engine`; uncommitted work and each machine's local `pstack-test` branch never travel.
 
-- **Update the Mac install:** commit here, fast-forward `main` to `t3-orchestration`, push both (needs the user's OK), then `ssh mac 'git -C ~/.local/share/pstack pull -q'`. It clones over HTTPS (the fork is public), so no Mac key is needed. Text edits need nothing more. Added, renamed, or removed a skill: run `pstack_link.py` there too (next item). OpenCode caches skills: new session after an update.
-- **Mac bench links:** `ssh mac 'python3 ~/.local/share/pstack/pstack/skills/setup-pstack/scripts/pstack_link.py --project ~/coding/Wisdio-pstack --harness codex --harness opencode --harness claude --apply'`. Doctor and `bench_check.py` run the same way from that scripts folder. The scripts must keep working on the Mac's Python 3.9.6.
-- **Pool:** per machine. Run `/setup-pstack` in a thread on each machine; its provider probe leaves out what that machine can't run (the Mac's Claude is not logged in as of 2026-09-27). The Mac's current file is a copy of this one, awaiting that rerun.
+- **Update the Mac install:** commit here, fast-forward `main` to `t3-orchestration`, push both (needs the user's OK). The user then updates the Mac per the README (`git pull`, rerun `npx skills add`).
+- **Pool:** per machine. The user runs `/setup-pstack` in a Mac thread; its provider probe leaves out what that machine can't run (the Mac's Claude is not logged in as of 2026-09-27). Never copy this machine's `models.json` there.
 - **PStack links never travel through git:** `pstack_link.py` excludes each link by exact name in `.git/info/exclude`. A skill PStack *generates* (for example `.agents/skills/verify-<app>/` plus its `.claude/skills` relative link) is a real directory, so git tracks it like any Wisdio file.
 - **Sending a generated skill to the other machine:**
   1. Commit it on the bench (`pstack-test`), in a commit that holds only the skill.

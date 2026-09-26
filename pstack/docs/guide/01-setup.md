@@ -1,12 +1,12 @@
 # Install and set up PStack
 
-This page covers linking PStack into a project, choosing a shared model pool, and running a first task. PStack runs inside T3 Code with Codex, Claude Code, or OpenCode.
+This page covers installing PStack, choosing a shared model pool, and running a first task. PStack runs inside T3 Code with Codex, Claude Code, or OpenCode.
 
 ## Why the setup looks like this
 
 PStack isn't finished when you install it. You keep bending it until it fits how you work. Three decisions follow from that.
 
-**Skills are symlinks.** Every project points back at one PStack checkout. Change a skill there and the next session in every linked project runs the new text. There's nothing to reinstall and no stale copy hiding in some repo. The catch: a link is untracked, so it shows up on every branch of that checkout. To try a PStack change in isolation, use a separate worktree; a branch won't isolate it.
+**Install for use, link for editing.** Most people install PStack once for their user account: every project sees the skills, and an update is `git pull` plus one command. If you change PStack itself, link its skills into one project instead. Every link points back at your checkout, so the next session there runs your edited text with nothing to reinstall. The catch: a link is untracked, so it shows up on every branch of that checkout. To try a PStack change in isolation, use a separate worktree; a branch won't isolate it.
 
 **The model pool is yours, not the project's.** `~/.config/pstack/models.json` records which models your T3 Code can run and which ones you're willing to pay for. Those are facts about you, and they don't change from repo to repo. One file means one setup covers Codex, Claude Code, and OpenCode everywhere, and no model choice ever lands in a project's git history. Per-project pools would each need re-checking whenever a provider renames a model or you move one to the `escalation` tier.
 
@@ -22,9 +22,20 @@ PStack isn't finished when you install it. You keep bending it until it fits how
 
 The generator stamps its output with `metadata.pstack-generated-by: create-verification-skill@1`. The doctor doesn't compare that stamp yet, so it can't tell you a verification skill predates the current generator. You'll have to check that yourself.
 
-## Link the skills into your project
+## Install for every project
 
-Skills are symlinks to this checkout, so a text edit to a skill is live. From the `pstack` directory, preview and then apply:
+```bash
+git clone --depth 1 https://github.com/Young-caveman/cursor-plugins ~/.local/share/pstack
+DO_NOT_TRACK=1 npx skills add ~/.local/share/pstack/pstack -g -a claude-code -a codex -a opencode -s '*' -y
+```
+
+This copies the skills into `~/.agents/skills` (Codex, OpenCode) and links each from `~/.claude/skills` (Claude Code). Drop the `-a` flags for harnesses you don't use; `DO_NOT_TRACK=1` turns off the installer's usage reporting. To update, `git pull` in the clone and rerun the `npx` command. A skill PStack removed stays installed until `npx skills remove -g -s <name> -y`. Edit skills in the clone, never in `~/.agents/skills`: the next update overwrites those copies.
+
+Then skip to [How skills get invoked](#how-skills-get-invoked). The doctor and link scripts below are for linked installs only.
+
+## Or link the skills into one project
+
+For editing PStack. Skills are symlinks to this checkout, so a text edit to a skill is live. Don't combine this with the user-level install on one machine: the project would show every skill twice. From the `pstack` directory, preview and then apply:
 
 ```bash
 python3 skills/setup-pstack/scripts/pstack_link.py --project /path/to/repo --harness codex --harness opencode --harness claude
