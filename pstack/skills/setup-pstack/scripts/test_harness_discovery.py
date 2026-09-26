@@ -18,7 +18,7 @@ class DiscoveryTest(unittest.TestCase):
     def setUp(self):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        self.root = Path(tmp.name)
+        self.root = Path(tmp.name).resolve()
         self.source = self.root / "pstack/skills"
         skills = {
             "alpha": "",

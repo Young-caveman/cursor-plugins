@@ -197,6 +197,7 @@ def check_policy(policy):
 
 
 def diagnose(project, source, policy):
+    source = source.resolve()
     skills = source_skills(source)
     found, links = check_links(project, source, skills)
     found += check_ignored(project, links)

@@ -29,6 +29,7 @@ def is_pstack_link(path):
 
 
 def plan(project, source, harnesses):
+    source = source.resolve()
     skills = source_skills(source)
     wanted = {HARNESS_DIRS[h] for h in harnesses}
     actions, keep = [], []
