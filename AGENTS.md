@@ -49,16 +49,17 @@ Update the test copy: `git -C /cave/Wisdio-pstack merge develop1-engine`.
 
 ## Not done
 
-- Discovery works in all three harnesses; the model pool is saved and every model in it answered a delegated call. No PStack workflow has run yet.
+- Discovery works in all three harnesses; the model pool is saved and every model in it answered a delegated call.
+- `swarm` is migrated and passed a real run. `interrogate`, `arena`, `architect`, `poteto-mode` are not migrated.
 - Claude Code drops most skill descriptions when the list is long: 23 of 25 PStack skills reach its model as a bare name. Descriptions need shortening.
-- Role workflows (`poteto-mode`, `arena`, `swarm`, `interrogate`) still call the removed `ready --harness`. Don't claim they work.
+- `poteto-mode` still calls the removed `ready --harness`; its playbooks still name the v1 `swarm workers` role.
 - Cursor-era paths: `create-verification-skill` / `maintain-verification-skill` use `.cursor/skills`. `recall`, `reflect`, `show-me-your-work`, `automate-me`, and `poteto-mode` read `~/.cursor` transcripts.
 - T3's Claude adapter silently remaps some effort values (`effortMap`). Warn the user; don't build a remap table.
 - `main` still has v1 skill text; the current source is `t3-orchestration`.
 
 ## Next
 
-1. Migrate role workflows to `setup-pstack/references/t3-delegation.md`: `swarm` first, then `interrogate`, `arena`, `architect`, and `poteto-mode`'s gate.
+1. Migrate the remaining workflows to `setup-pstack/references/t3-delegation.md`, following `swarm`: `interrogate`, `arena`, `architect`, then `poteto-mode`'s gate.
 2. Replace Cursor-era paths.
 3. Shorten skill descriptions so Claude keeps them (listing budget ~8,000 characters).
 
