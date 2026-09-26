@@ -6,41 +6,26 @@ disable-model-invocation: true
 
 # Swarm
 
-Fan out N parallel cloud workers. They may cover separate slices, race the same brief, or mix both. The parent waits, aggregates, and returns one report.
+Fan out N parallel workers through T3. They cover separate slices, race the same brief, or both. The parent waits, aggregates, and returns one report. Delegate per [T3 delegation](../setup-pstack/references/t3-delegation.md).
 
-## Start
+## 1. Frame
 
-Open a todolist with one entry per phase before launching anything.
+1. State the done predicate and what the swarm must return.
+2. Choose the shape: partition into slices, race N workers on one brief, or mix. For a race, declare the selection rule before launching: `first pass`, `rank all`, or `best-of`.
+3. Set N from the user, or derive it from the shape. N counts workers, not concurrency.
+4. Pick each worker's pool entry and dry-run it with `model_policy.py resolve --id <entry> --snapshot <capabilities.json>`. For a model race, give each arm a different entry and name them up front. A target outside the pool needs the user's explicit authorization.
+5. Decide who writes. Read-only workers run as `delegate_task` children. Workers that edit files each get their own worktree via `t3_thread_launch`, because `delegate_task` children share this checkout.
 
-1. Frame
-2. Fan out
-3. Aggregate
-4. Report
+## 2. Fan out
 
-## Phase A: Frame
+Launch all N in one message, `mode: "async"`, each with a stable `clientRequestId` (`swarm-<slug>-<n>`). Read-only workers get `interactionMode: "plan"`. Then end the turn; completions wake you.
 
-1. State the done predicate and the artifact or report the swarm must return.
-2. Choose the shape. Partition into slices, race N workers on identical briefs, or mix both. For a race or mixed shape, declare `first pass`, `rank all`, or `best-of` before spawning.
-3. Set N from the user or derive it from the shape. N is total workers, not the cloud concurrency limit.
-4. Pick the worker profile from `swarm workers` in the [PStack routing policy](../setup-pstack/references/model-routing.md). If no usable mapping exists, resolve it before spawning. For a model race, name each arm's approved profile and effective model up front.
-5. Give each worker its own writable output when it writes.
+Every brief stands alone, since a worker sees nothing but its brief: goal, scope, the exact slice or race arm, how to verify, and what to report. Reports start with `PASS`, `ISSUES`, or `BLOCKED` and cite evidence.
 
-## Phase B: Fan out
+## 3. Aggregate
 
-Spawn all N workers in one message with the workflow's agent type and the resolved profile for each worker. Use `environment: "cloud"` and `run_in_background: true` where the active harness supports them; use a local environment when the worker needs access to something on the user's computer. Do not pass unsupported Cursor-only fields to Codex or OpenCode.
+Read each result with `task_status` (or `t3_thread_read` for launched worktree threads). Coverage needs a result for every slice; a race applies the rule declared in step 1. A failed or silent worker is a dropout: continue with N−1 and note it. Check claims against evidence before trusting them; don't paste raw worker output.
 
-When a worker must start from a non-default pushed branch, pass `cloud_base_branch`.
+## 4. Report
 
-Every brief stands alone. Include the goal, scope, exact slice or race arm, how to verify, and what to report. Reports use `PASS`, `ISSUES`, or `BLOCKED` with evidence.
-
-If a worker drops out, proceed with N-1 and note it.
-
-## Phase C: Aggregate
-
-Read the terminal results. For coverage, every required slice needs a result. For a race, apply the selection rule declared up front. Use first pass, rank all, or best-of. Do not paste raw worker dumps.
-
-Keep a compact result table, one-line evidenced issues, and explicit gaps or dropouts.
-
-## Phase D: Report
-
-Return one consolidated in-chat report with the table, issue one-liners, gaps or dropouts, and the race rule when used.
+One in-chat report: a compact table (worker, pool entry, model, status, finding), one-line evidenced issues, gaps and dropouts, and the race rule if used.
