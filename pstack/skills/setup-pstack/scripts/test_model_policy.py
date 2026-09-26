@@ -116,15 +116,29 @@ def capability_snapshot():
                                 "type": "select",
                                 "options": [
                                     {"id": "low", "label": "Low"},
-                                    {"id": "medium", "label": "Medium", "isDefault": True},
-                                    {"id": "high", "label": "High"},
+                                    {"id": "medium", "label": "Medium"},
+                                    {"id": "high", "label": "High", "isDefault": True},
                                     {"id": "xhigh", "label": "Extra High"},
                                     {"id": "max", "label": "Max"},
+                                    {
+                                        "id": "ultracode",
+                                        "label": "Ultracode",
+                                        "description": "xhigh effort plus multi-agent workflow orchestration",
+                                    },
                                     {"id": "ultrathink", "label": "Ultrathink"},
                                 ],
-                                "currentValue": "medium",
+                                "promptInjectedValues": ["ultrathink"],
                             },
                             {"id": "fastMode", "label": "Fast Mode", "type": "boolean"},
+                            {
+                                "id": "contextWindow",
+                                "label": "Context Window",
+                                "type": "select",
+                                "options": [
+                                    {"id": "200k", "label": "200k"},
+                                    {"id": "1m", "label": "1M", "isDefault": True},
+                                ],
+                            },
                         ],
                     }
                 ],

@@ -12,6 +12,7 @@ Turn PStack (originally for Cursor) into the user's personal skill set for Codex
 - Never silently substitute a model or raise reasoning effort. Effort levels don't carry across models.
 - PStack writes nothing tracked into a user project: no lock files, no `.gitignore` entries, no pointer lines in the project's `AGENTS.md`.
 - Anything checkable by reading files is a script, not manual inspection. Scripts prove state; only a harness run proves behavior.
+- Spawned agents follow `setup-pstack/references/t3-delegation.md`: `delegate_task` children share the parent's checkout; parallel writers get `t3_thread_launch` worktrees; briefs stand alone.
 - Keep skill text short. Current models over-follow ceremony (forced todos, always-test, stop-for-review).
 - Keep work under `pstack/`. This repo is sparse-checkout (`/*`, `!/*/`, `/pstack/`). Run `git sparse-checkout add <dir>` before creating a new top-level dir; never disable sparse-checkout.
 - The user runs installs and harness tests. Prefer free OpenCode models (Muse Spark 1.3 Free) for tests and delegated research.
@@ -31,7 +32,7 @@ Scripts are in `pstack/skills/setup-pstack/scripts/`.
 1. Edit skills here.
 2. Added, renamed, or removed a skill → `pstack_link.py --project /cave/Wisdio-pstack --harness codex --harness opencode --harness claude --apply`. Text edits need nothing.
 3. Test from a T3 thread in `/cave/Wisdio-pstack`. OpenCode caches skills: start a new session after edits.
-4. Something looks broken → run `pstack_doctor.py --project /cave/Wisdio-pstack` first.
+4. Something looks broken → run `pstack_doctor.py --project /cave/Wisdio-pstack` first. Threads in another T3 project can't be read via `t3_thread_read`; read harness logs with `audit-rollout.py`.
 5. Commit here; log results in `pstack/develop-log/`.
 
 Update the test copy: `git -C /cave/Wisdio-pstack merge develop1-engine`.
@@ -46,20 +47,19 @@ Update the test copy: `git -C /cave/Wisdio-pstack merge develop1-engine`.
 
 ## Not done
 
-- No PStack skill has run in a real harness yet.
+- Discovery works in all three harnesses (see develop-log 2026-09-26). No PStack workflow has run yet.
+- Claude Code hides the 46 skills marked `disable-model-invocation: true`; Codex and OpenCode ignore the field. Policy undecided.
+- Codex names the skills `pstack:<skill>`, probably from the Cursor-era `pstack/.cursor-plugin/plugin.json`.
 - Role workflows (`poteto-mode`, `arena`, `swarm`, `interrogate`) still call the removed `ready --harness`. Don't claim they work.
 - Cursor-era paths: `create-verification-skill` / `maintain-verification-skill` use `.cursor/skills`. `recall`, `reflect`, `show-me-your-work`, `automate-me`, and `poteto-mode` read `~/.cursor` transcripts.
-- `test_model_policy.py` Claude fixtures are invented; re-derive them from a real snapshot.
 - T3's Claude adapter silently remaps some effort values (`effortMap`). Warn the user; don't build a remap table.
 - `main` still has v1 skill text; the current source is `t3-orchestration`.
 
 ## Next
 
-1. User: discovery test in `/cave/Wisdio-pstack` for all three harnesses. Check whether OpenCode lists duplicates, since it reads both skill dirs.
-2. User: run `setup-pstack` in each harness; log the results.
-3. Re-derive the Claude test fixtures.
-4. Replace Cursor-era paths.
-5. Migrate `poteto-mode`'s gate to the v2 pool, then `arena` / `swarm` / `interrogate`, after step 2 has a real result.
+1. User: choose the model pool (`setup-pstack`) and the `disable-model-invocation` policy.
+2. Migrate role workflows to `setup-pstack/references/t3-delegation.md`: `swarm` first, then `interrogate`, `arena`, `architect`, and `poteto-mode`'s gate.
+3. Replace Cursor-era paths and remove `pstack/.cursor-plugin/`.
 
 ## Safety
 
