@@ -24,7 +24,7 @@ Every brief stands alone, since a worker sees nothing but its brief: goal, scope
 
 ## 3. Aggregate
 
-Read delegated results with `task_status`, or launched worktree threads with `t3_thread_wait` and `t3_thread_read`. Coverage needs a result for every slice; a race applies the rule declared in step 1. A failed or silent worker is a dropout: continue with N−1 and note it. Check claims against evidence before trusting them; don't paste raw worker output.
+Read delegated results with `task_status`, or launched worktree threads with `t3_thread_wait` and `t3_thread_read`. Coverage needs a result for every slice; a race applies the rule declared in step 1. A worker whose provider couldn't run gets one rerun on another provider ([T3 delegation](../setup-pstack/references/t3-delegation.md#waiting)); any other failed or silent worker is a dropout: continue with N−1 and note it. Check claims against evidence before trusting them; don't paste raw worker output.
 
 ## 4. Report
 

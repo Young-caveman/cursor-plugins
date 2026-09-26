@@ -25,7 +25,7 @@ Launch `delegate_task` candidates with `mode: "async"`; launch worktree candidat
 
 Each rationale names the alternatives the candidate considered and what it rejected.
 
-If a candidate fails to produce output, proceed with N-1 and note the dropout in the synthesis record.
+If a candidate's provider couldn't run, rerun it once per [T3 delegation](../setup-pstack/references/t3-delegation.md#waiting). If a candidate fails to produce output otherwise, proceed with N-1 and note the dropout in the synthesis record.
 
 If only one candidate remains, there is no comparison or graft. Verify that artifact and report the arena as degraded.
 

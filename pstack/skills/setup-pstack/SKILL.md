@@ -32,6 +32,8 @@ If `~/.config/pstack/models.json` exists, read it before changing anything:
 
 Ask which discovered models belong in the pool. The pool is shared across all task roles, so one selection covers every PStack workflow; a model can also stay out. For each selected model, show the exact model ID, label, defaults, and the full reasoning choices; recommend a strongest value only when evidence establishes it, otherwise ask. The user accepts, picks another advertised value, or leaves an option at its provider default. Store only confirmed, advertised values. Ask which entries are expensive enough to keep for hard tasks only, and mark those `"tier": "escalation"`; at least one entry must remain `default`. Do not promise billing, cost-cap, concurrency, retry, or nesting behavior; reasoning effort and pool size affect cost separately.
 
+Before saving, probe each provider the selection uses: one `delegate_task` call with `mode: "wait"` on that provider's cheapest selected entry, task "Reply with the single word PONG. Do not use tools." A listed provider can still fail to run (not logged in on this machine, binary missing), and only a call shows it. When a probe fails, show the user its error, leave that provider's entries out, and say what would fix it (for example `claude auth login`). The pool is per machine: run setup on each machine rather than copying another machine's file.
+
 Setup is a default, not an exemption. Preserve a specialist agent's own instructions and tools, but the pool or an existing explicit authorization still governs every routed call's model. When a specialist or native path selects its own model or reasoning option, verify the effective model and options match a pool entry or the authorization before running; a changed reasoning option is an out-of-pool target. The main chat model stays unchanged.
 
 ## 3. Save the policy
@@ -48,7 +50,7 @@ python3 scripts/model_policy.py ready --snapshot <capabilities.json>
 python3 scripts/model_policy.py resolve --id <entry-id> --snapshot <capabilities.json>
 ```
 
-`validate` proves structure. `ready --snapshot` proves each saved entry is currently advertised and each saved option value is legal. Neither proves a target runs: only delegated work that succeeds does, and setup does not spend model calls to find out. Report invocation as unverified.
+`validate` proves structure. `ready --snapshot` proves each saved entry is currently advertised and each saved option value is legal. Neither proves a target runs. The step 2 probe proves each provider ran once on this machine; report other entries of a probed provider as provider-verified, not model-verified.
 
 ## 4. Use the pool when delegating
 
@@ -56,4 +58,4 @@ python3 scripts/model_policy.py resolve --id <entry-id> --snapshot <capabilities
 
 ## 5. Report
 
-Report the providers discovered, the saved pool entries, that the policy is structurally valid and advertised as available, that invocation is unverified until real delegated work succeeds, any v1 migration left for review, and whether a new session is needed. This skill configures models only: it does not offer or create project verification skills.
+Report the providers discovered, the saved pool entries, that the policy is structurally valid and advertised as available, each provider's probe result and any provider left out with its fix, any v1 migration left for review, and whether a new session is needed. This skill configures models only: it does not offer or create project verification skills.

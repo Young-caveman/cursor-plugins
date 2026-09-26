@@ -62,7 +62,7 @@ Descriptor order reflects the provider catalog and has no guaranteed strength se
 
 ## Readiness levels
 
-`validate` proves structural validity only. `ready --snapshot` adds currently advertised availability: every pool entry must map to a runnable provider, an advertised model, and legal option values. Invocation success is a third level that no offline check proves; only a delegated call that succeeds does, and `ready` always reports `invocation: unverified`. A mismatch means stop and ask for a confirmed target; never guess a replacement.
+`validate` proves structural validity only. `ready --snapshot` adds currently advertised availability: every pool entry must map to a runnable provider, an advertised model, and legal option values. Invocation success is a third level that no offline check proves; only a delegated call that succeeds does, and `ready` always reports `invocation: unverified`. Setup probes each provider once for this reason, and workflows retry provider failures on another entry (see [T3 delegation](t3-delegation.md#waiting)). A mismatch means stop and ask for a confirmed target; never guess a replacement.
 
 ## CLI
 

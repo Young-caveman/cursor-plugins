@@ -50,7 +50,8 @@ T3 has no agent types. When a workflow names a reviewer persona, read its instru
 - Launch `delegate_task` children in one message with `mode: "async"`, then end the turn. Each completion wakes the parent; do not poll or spawn watchers. `t3_thread_launch` starts a separate top-level thread and has no `mode` parameter.
 - Use `delegate_task` with `mode: "wait"` only when the very next step needs that one result.
 - Read results with `task_status` (delegated tasks) or `t3_thread_wait` + `t3_thread_read` (launched threads). A `wait` timeout does not cancel the child.
-- A child that fails or times out is a dropout: continue with N−1 and report it.
+- A child that failed before doing any work because its provider couldn't run (not logged in, provider unavailable, binary missing) gets one rerun: same brief, a new `clientRequestId`, and another `default` pool entry from a different provider. Report the swap and the original error. A provider that failed this way stays unused for the rest of the workflow.
+- Any other failure or timeout is a dropout: continue with N−1 and report it. Never rerun a child that did work and failed its task, and never go outside the pool.
 
 ## Report
 
