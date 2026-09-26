@@ -25,7 +25,7 @@ Turn PStack (originally for Cursor) into the user's personal skill set for Codex
 |---|---|
 | this worktree (`t3-orchestration`) | PStack source; edit skills here |
 | `/cave/Wisdio` (`develop1-engine`) | normal Wisdio work; no PStack |
-| `/cave/Wisdio-pstack` (`pstack-test`) | Wisdio + PStack links in `.agents/skills` (Codex, OpenCode) and `.claude/skills` (Claude Code) |
+| `/cave/Wisdio-pstack` (`pstack-test`) | **test bench only** — Wisdio + PStack links in `.agents/skills` (Codex, OpenCode) and `.claude/skills` (Claude Code). Wisdio here is just the app under test; PStack stays project-agnostic and never mentions Wisdio in its own docs or skills. |
 
 ## Routine
 

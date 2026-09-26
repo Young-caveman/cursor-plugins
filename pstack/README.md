@@ -8,9 +8,9 @@ A personal skill set for doing rigorous work with coding agents under T3 Code, t
 
 **Write less, better code.** The goal is not to maximize loc. The skills enforce deep understanding, deliberate structure, and verified results.
 
-## Migration status
+## Status
 
-This personal branch has migrated the skill workflows to T3 Code and linked them into a Wisdio test checkout. `swarm` passed a real T3 run, and `interrogate` produced a three-reviewer verdict. The other workflows still need end-to-end harness runs. The latest source checks passed 72 script tests; the first real Wisdio verification skill has not been generated yet. See [AGENTS.md](../AGENTS.md) for the current handoff and [the development log](./develop-log/) for evidence.
+The skill workflows delegate through T3 Code's orchestration tools. Fork status, harness test evidence, and open gaps live in [AGENTS.md](../AGENTS.md) and [the development log](./develop-log/).
 
 ## Install
 

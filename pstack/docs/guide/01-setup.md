@@ -30,6 +30,12 @@ python3 skills/setup-pstack/scripts/harness_discovery.py --project /path/to/repo
 
 `pstack_doctor.py` is a read-only report of drift between the source and the project. `harness_discovery.py` reads the newest Codex and Claude Code session logs for the project and lists which skills each harness actually offered its model; OpenCode records no such list, so ask the model there.
 
+## What counts as drift
+
+Skill *text* is always current — the links are symlinks, so an edit to the source is the edit in your project. What can go stale is anything a skill *writes into* the project: a generated `verify-<app>` skill, a leftover lock file, a link to a deleted skill, a real directory shadowing a link. Those are snapshots; the source moved on and they didn't.
+
+`pstack_doctor.py` names each one (`dangling-link`, `shadowing-copy`, `cursor-era-skill`, `lock-pins-live-source`, `unlinked-skill`, and friends). Fix links with `pstack_link.py --apply`; refresh a drifted verify skill with `/maintain-verification-skill`; delete other leftovers by hand once the doctor names them. The doctor can see that a snapshot mismatches the source, but it cannot yet tell *how old* a generated artifact is — version stamps for that are not built. Until then, regenerate instead of trusting an old copy.
+
 ## How skills get invoked
 
 The principle skills, `unslop`, `typescript-best-practices`, and `setup-pstack` may trigger on their own. The 21 workflow skills carry `disable-model-invocation: true`. Only Claude Code honours that field, so there they run only when you type `/name`. Codex and OpenCode ignore it, so select a workflow by name (`$poteto-mode` in Codex; ask the OpenCode agent to use the skill).
