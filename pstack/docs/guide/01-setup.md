@@ -1,6 +1,6 @@
 # Install and set up PStack
 
-This page covers installing PStack into Codex or OpenCode, choosing model profiles, and running a first task.
+This page covers installing PStack into Codex or OpenCode, choosing a shared model pool, and running a first task.
 
 ## Install for your harness
 
@@ -24,19 +24,19 @@ If you use Cursor, its separate plugin flow is `/add-plugin pstack`.
 
 ## Pick your models
 
-Invoke [`setup-pstack`](../../skills/setup-pstack/SKILL.md) through your harness's skill interface, or ask the agent to use it. In Codex, skills can be explicitly selected with `$setup-pstack`; in OpenCode, ask the agent to use the `setup-pstack` skill. It checks the active subagent API, installed version, available model IDs, and current harness settings. It then shows the role table, model profiles, supported reasoning options, and panel sizes for your choice.
+Invoke [`setup-pstack`](../../skills/setup-pstack/SKILL.md) through your harness's skill interface, or ask the agent to use it. In Codex, skills can be explicitly selected with `$setup-pstack`; in OpenCode, ask the agent to use the `setup-pstack` skill. In a T3 Code session, setup reads the current thread's orchestrator capabilities: which providers can run child tasks, which models each advertises, and which option values the orchestrator accepts. It shows the exact descriptors, defaults, and advertised choices. List order has no strength meaning; setup recommends a strongest reasoning value only when the descriptor's own semantics or current provider evidence establishes one, and otherwise asks. It saves only the values you confirm.
 
-Setup saves one PStack policy at `~/.config/pstack/models.json`. It may also create namespaced Codex TOML or OpenCode agent definitions when the active invocation path can use them. The policy remains the source of truth; setup does not rewrite your main chat model or general harness config. Skills use a role's default profile and may choose only a profile you allowed for that role. A missing role requires setup or an explicit choice, not a stale hard-coded model.
+> **Model setup transition (this revision).** This revision covers model setup only. `setup-pstack` writes the v2 shared pool, but role-based workflows, including `poteto-mode`, still read the previous per-role policy. Their readiness gate is incompatible with v2 and reports migration required, so the pool is not yet consumed by those workflows. That integration is the next stage; until it lands, do not expect the legacy gate to pass after setup.
 
-`inherit-parent` expresses an intention to use the parent session's model and reasoning. It is offered only when the current Codex or OpenCode invocation path can honor it. The old Cursor `auto`/`inherit-parent` entries and Cursor model slugs are not copied as native IDs. A panel list still starts one subagent per entry; `swarm workers` sets the worker default unless a race specifies its arms.
+Setup saves one shared pool at `~/.config/pstack/models.json`. The pool has no per-role tables and no required cost, concurrency, or retry settings. Setup does not raise `serviceTier`, `fastMode`, or other non-reasoning options on its own, does not change your main chat model, and preserves specialist agents' own instructions and tools. It validates the file structure and, from the session's capability snapshot, verifies each entry is currently advertised with legal option values; that still does not prove a target runs, so setup reports invocation as unverified.
 
-## Accept the verification offer, or don't
+The pool is the model-setup contract: a task may use one entry or several, including temporary mixtures for comparison. A model outside the pool needs your explicit authorization for that task; a one-off target is never added to the pool automatically, nested subagents inherit the same scope, and the helper records the caller's evidence rather than verifying consent. A specialist's own model choice is not exempt: it must match a pool entry or an existing authorization. PStack does not guarantee provider billing behavior or enforce spending limits.
 
-At the end of setup, `setup-pstack` looks for a way to prove app behavior in your project, either a `verify-*` skill or an existing harness. If it finds neither, it offers once to generate one with [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md).
+If you already have a version 1 role policy, setup leaves the file untouched and shows a reviewed conversion. Old per-role restrictions do not become blanket pool authorization; only entries you confirm are carried over.
 
-The verification skill's destination depends on the harness. It is separate from model routing; say no if you only want to configure models. [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) covers when it earns its place.
+## A verification skill is a separate choice
 
-Start a new session if your harness needs one to load new agent definitions. Setup should report this after inspecting the active harness.
+`setup-pstack` configures models only. If you want a scripted way to prove app behavior, invoke [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md) yourself; [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) covers when it earns its place.
 
 ## Run your first task
 
@@ -45,6 +45,8 @@ Pick something real but small, and describe it the way you'd describe it to a co
 ```text
 Use poteto-mode: add a --json flag to this command. Text output stays byte-identical. Verify both.
 ```
+
+Reminder: this revision is model setup only. Until workflow integration lands (see the transition note above), `poteto-mode`'s legacy readiness gate reports migration required.
 
 Watch the todo list. Its first items are the matched playbook's steps copied in, the Feature playbook for this prompt. If poteto-mode skips a step, the step stays in the list with `skip: <reason>`, so you can see what it chose not to do.
 

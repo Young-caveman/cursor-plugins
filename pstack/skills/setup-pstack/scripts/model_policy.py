@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Validate and resolve PStack's user-owned model policy without changing files.
+"""Pure checks for PStack's v2 model-pool policy.
 
-The OpenCode native-agent adapter targets OpenCode 1.x only.
+Reads `~/.config/pstack/models.json` and an optional orchestrator_capabilities
+snapshot, then prints structure, resolution, or readiness results. It never
+writes user files, never invokes a model, and never contacts a provider.
 """
 
 import argparse
@@ -10,22 +12,22 @@ import re
 import sys
 from pathlib import Path
 
-
-SINGLE_ROLES = {
-    "feature", "refactoring", "bug-fix", "perf-issue", "hillclimb",
-    "judgment and prose", "hardest tasks", "how explorer", "how explainer",
-    "why investigators", "why synthesizer", "reflect tooling",
-    "reflect judgment, divergent, synthesizer", "swarm workers", "recall fanout",
-}
-LIST_ROLES = {
-    "arena runners", "arena cross-judge pool", "architect runners",
-    "interrogate reviewers",
-}
-HARNESSES = {"codex", "opencode"}
-PROFILE_ID = re.compile(r"^[a-z][a-z0-9-]*$")
+POLICY_VERSION = 2
+ENTRY_ID = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
+OPTION_KEY = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+V1_HINT = (
+    "version 1 is a role-routing policy and is no longer read by this helper; "
+    "the file was left unchanged. Run `model_policy.py convert` to print a "
+    "reviewed v2 conversion, confirm each entry with the user, then save the "
+    "reviewed policy."
+)
 
 
 class PolicyError(ValueError):
+    pass
+
+
+class MigrationRequired(PolicyError):
     pass
 
 
@@ -34,143 +36,591 @@ def require(condition, message):
         raise PolicyError(message)
 
 
+def is_token(value):
+    return (
+        isinstance(value, str)
+        and value == value.strip()
+        and bool(value)
+        and not any(character.isspace() for character in value)
+    )
+
+
 def validate(policy):
     require(isinstance(policy, dict), "policy must be a JSON object")
-    require(set(policy) == {"version", "harnesses", "profiles", "roles"}, "policy has unknown or missing top-level fields")
-    require(type(policy.get("version")) is int and policy["version"] == 1, "version must be 1")
-    harnesses = policy.get("harnesses")
-    require(isinstance(harnesses, list) and harnesses, "harnesses must be a nonempty list")
-    require(all(isinstance(h, str) and h in HARNESSES for h in harnesses), "unsupported harness")
-    require(len(harnesses) == len(set(harnesses)), "duplicate harness")
-
-    profiles = policy.get("profiles")
-    require(isinstance(profiles, dict) and profiles, "profiles must be a nonempty object")
-    for name, targets in profiles.items():
-        require(isinstance(name, str) and PROFILE_ID.fullmatch(name), f"invalid profile name: {name!r}")
-        require(isinstance(targets, dict), f"profile {name} must be an object")
-        require(set(targets) <= HARNESSES, f"profile {name} has an unsupported harness entry")
-        for harness in harnesses:
-            spec = targets.get(harness)
-            require(isinstance(spec, dict), f"profile {name} lacks {harness} settings")
-            if "selection" in spec:
-                require(spec == {"selection": "inherit-parent"}, f"profile {name}/{harness}: invalid inherit entry")
-                continue
-            model = spec.get("model")
-            require(isinstance(model, str) and model.strip() == model and model, f"profile {name}/{harness}: model is required")
-            require(not any(c.isspace() for c in model), f"profile {name}/{harness}: model contains whitespace")
-            require(model not in {"auto", "inherit-parent"}, f"profile {name}/{harness}: alias is not a model")
-            if harness == "codex":
-                require(set(spec) <= {"model", "reasoning_effort"}, f"profile {name}/codex: unknown field")
-                if "reasoning_effort" in spec:
-                    effort = spec["reasoning_effort"]
-                    require(isinstance(effort, str) and effort, f"profile {name}/codex: invalid effort")
-            else:
-                require("/" in model and not model.startswith("/") and not model.endswith("/"), f"profile {name}/opencode: use provider/model")
-                require("#" not in model, f"profile {name}/opencode: keep variants out of the model ID for OpenCode 1.x")
-                require(set(spec) <= {"model", "options"}, f"profile {name}/opencode: unknown field")
-                options = spec.get("options", {})
-                require(isinstance(options, dict), f"profile {name}/opencode: options must be an object")
-                reserved = {"description", "mode", "model", "name", "permission", "prompt", "temperature", "tools", "top_p"}
-                for key in options:
-                    require(isinstance(key, str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", key), f"profile {name}/opencode: invalid option key {key!r}")
-                    require(key not in reserved, f"profile {name}/opencode: {key!r} is an agent field, not a model option")
-
-    roles = policy.get("roles")
-    require(isinstance(roles, dict), "roles must be an object")
-    expected = SINGLE_ROLES | LIST_ROLES
-    require(set(roles) == expected, f"roles differ: missing={sorted(expected - set(roles))}, extra={sorted(set(roles) - expected)}")
-    for role in SINGLE_ROLES:
-        route = roles[role]
-        require(isinstance(route, dict), f"role {role}: expected an object")
-        default, allowed = route.get("default"), route.get("allowed")
-        require(isinstance(default, str) and default in profiles, f"role {role}: unknown default profile")
-        require(isinstance(allowed, list) and allowed, f"role {role}: allowed must be a nonempty list")
-        require(all(isinstance(p, str) and p in profiles for p in allowed), f"role {role}: unknown allowed profile")
-        require(default in allowed and len(allowed) == len(set(allowed)), f"role {role}: allowed must uniquely include default")
-        require(set(route) == {"default", "allowed"}, f"role {role}: unknown field")
-    for role in LIST_ROLES:
-        route = roles[role]
-        require(isinstance(route, dict) and set(route) == {"default"}, f"role {role}: expected a default list")
-        values = route["default"]
-        require(isinstance(values, list) and values, f"role {role}: list must be nonempty")
-        require(all(isinstance(p, str) and p in profiles for p in values), f"role {role}: unknown profile")
+    version = policy.get("version")
+    if (type(version) is int and version == 1) or (
+        "version" not in policy and "profiles" in policy and "roles" in policy
+    ):
+        raise MigrationRequired(V1_HINT)
+    require(
+        set(policy) == {"version", "pool"},
+        "policy has unknown or missing top-level fields",
+    )
+    require(
+        type(version) is int and version == POLICY_VERSION,
+        f"version must be the integer {POLICY_VERSION}",
+    )
+    pool = policy["pool"]
+    require(isinstance(pool, list) and pool, "pool must be a nonempty list")
+    seen = set()
+    for entry in pool:
+        require(isinstance(entry, dict), "pool entries must be objects")
+        extra = set(entry) - {"id", "providerInstanceId", "model", "options"}
+        require(not extra, f"pool entry has unknown fields: {sorted(extra)}")
+        missing = {"id", "providerInstanceId", "model"} - set(entry)
+        require(not missing, f"pool entry is missing {sorted(missing)}")
+        entry_id = entry["id"]
+        require(
+            isinstance(entry_id, str) and ENTRY_ID.fullmatch(entry_id),
+            f"invalid pool entry id: {entry_id!r}",
+        )
+        require(entry_id not in seen, f"duplicate pool entry id: {entry_id}")
+        seen.add(entry_id)
+        for field in ("providerInstanceId", "model"):
+            require(
+                is_token(entry[field]),
+                f"pool entry {entry_id}: {field} must be a nonempty token",
+            )
+        options = entry.get("options", {})
+        require(isinstance(options, dict), f"pool entry {entry_id}: options must be an object")
+        for key, value in options.items():
+            require(
+                isinstance(key, str) and OPTION_KEY.fullmatch(key),
+                f"pool entry {entry_id}: invalid option key {key!r}",
+            )
+            require(
+                isinstance(value, bool) or is_token(value),
+                f"pool entry {entry_id}: option {key} must be a nonempty token or boolean",
+            )
     return policy
 
 
-def resolve(policy, harness, role, profile=None, index=None):
-    require(harness in policy["harnesses"], f"harness {harness} is not configured")
-    require(role in policy["roles"], f"unknown role: {role}")
-    route = policy["roles"][role]
-    if role in LIST_ROLES:
-        require(profile is None, "list roles do not accept a profile override")
-        require(index is not None, "list roles require --index (zero-based)")
-        require(0 <= index < len(route["default"]), "list index is out of range")
-        selected = route["default"][index]
-    else:
-        require(index is None, "single roles do not accept --index")
-        selected = profile or route["default"]
-        require(selected in route["allowed"], f"profile {selected} is not allowed for {role}")
-    return {"role": role, "profile": selected, "harness": harness, "settings": policy["profiles"][selected][harness]}
+def validate_snapshot(snapshot):
+    require(isinstance(snapshot, dict), "snapshot must be a JSON object")
+    require(
+        isinstance(snapshot.get("providers"), list),
+        "snapshot must be an orchestrator_capabilities object with a providers list",
+    )
+    inherited = snapshot.get("inheritedProviderInstanceId")
+    if inherited is not None:
+        require(
+            isinstance(inherited, str),
+            "snapshot inheritedProviderInstanceId must be a string",
+        )
+    for provider in snapshot["providers"]:
+        require(isinstance(provider, dict), "snapshot provider entries must be objects")
+        provider_id = provider.get("providerInstanceId")
+        require(
+            isinstance(provider_id, str) and provider_id,
+            "snapshot provider entries need a providerInstanceId",
+        )
+        models = provider.get("models")
+        require(
+            isinstance(models, list), f"provider {provider_id}: models must be a list"
+        )
+        for model in models:
+            require(
+                isinstance(model, dict), f"provider {provider_id}: model entries must be objects"
+            )
+            model_id = model.get("id")
+            require(
+                isinstance(model_id, str) and model_id,
+                f"provider {provider_id}: model entries need a string id",
+            )
+            descriptors = model.get("options", [])
+            require(isinstance(descriptors, list), f"model {model_id}: options must be a list")
+            for descriptor in descriptors:
+                require(
+                    isinstance(descriptor, dict),
+                    f"model {model_id}: option descriptors must be objects",
+                )
+                descriptor_id = descriptor.get("id")
+                require(
+                    isinstance(descriptor_id, str) and descriptor_id,
+                    f"model {model_id}: option descriptors need a string id",
+                )
+                kind = descriptor.get("type")
+                require(
+                    kind in {"select", "boolean"},
+                    f"model {model_id}: option {descriptor_id} has unsupported type {kind!r}",
+                )
+                if kind == "select":
+                    choices = descriptor.get("options")
+                    require(
+                        isinstance(choices, list),
+                        f"model {model_id}: select option {descriptor_id} needs an options list",
+                    )
+                    for choice in choices:
+                        require(
+                            isinstance(choice, dict) and isinstance(choice.get("id"), str),
+                            f"model {model_id}: select option {descriptor_id} choices need string ids",
+                        )
+                if "promptInjectedValues" in descriptor:
+                    injected = descriptor["promptInjectedValues"]
+                    require(
+                        isinstance(injected, list)
+                        and all(isinstance(value, str) for value in injected),
+                        f"model {model_id}: promptInjectedValues must be a list of strings",
+                    )
+        constraints = provider.get("constraints", [])
+        require(
+            isinstance(constraints, list),
+            f"provider {provider_id}: constraints must be a list",
+        )
+    return snapshot
 
 
-def ready(policy, harness):
-    require(harness in policy["harnesses"], f"harness {harness} is not configured")
-    for role in SINGLE_ROLES:
-        resolve(policy, harness, role)
-    for role in LIST_ROLES:
-        for index in range(len(policy["roles"][role]["default"])):
-            resolve(policy, harness, role, index=index)
-    return {"harness": harness, "ready": True}
+def provider_by_id(snapshot, provider_instance_id):
+    for provider in snapshot["providers"]:
+        if provider.get("providerInstanceId") == provider_instance_id:
+            return provider
+    return None
 
 
-def render_agent(policy, harness, profile):
-    require(harness in policy["harnesses"], f"harness {harness} is not configured")
-    require(profile in policy["profiles"], f"unknown profile: {profile}")
-    settings = policy["profiles"][profile][harness]
-    name = f"pstack-{profile}"
-    if harness == "codex":
-        lines = [
-            f"name = {json.dumps(name)}",
-            f"description = {json.dumps('PStack model profile: ' + profile)}",
-            'developer_instructions = "Follow the invoking task and its constraints."',
-        ]
-        if "model" in settings:
-            lines.append(f"model = {json.dumps(settings['model'])}")
-            if settings.get("reasoning_effort") is not None:
-                lines.append(f"model_reasoning_effort = {json.dumps(settings['reasoning_effort'])}")
-        return "\n".join(lines) + "\n"
-    lines = ["---", f"description: {json.dumps('PStack model profile: ' + profile)}", "mode: subagent"]
-    if "model" in settings:
-        lines.append(f"model: {json.dumps(settings['model'])}")
-        for key, value in settings.get("options", {}).items():
-            require(isinstance(key, str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", key), f"invalid OpenCode option key: {key!r}")
-            lines.append(f"{key}: {json.dumps(value, ensure_ascii=False)}")
-    lines.append("---")
-    return "\n".join(lines) + "\n"
+def unavailable_reason(snapshot, provider):
+    constraints = [str(item) for item in provider.get("constraints") or []]
+    if constraints:
+        return "reports constraints: " + "; ".join(constraints)
+    if provider.get("canRunChildTask") is not True:
+        return "does not advertise canRunChildTask"
+    if (
+        provider.get("providerInstanceId") != snapshot.get("inheritedProviderInstanceId")
+        and provider.get("canRunCrossProviderChildTask") is not True
+    ):
+        return "does not advertise canRunCrossProviderChildTask"
+    return None
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["validate", "ready", "resolve", "render-agent"])
-    parser.add_argument("--policy", type=Path, default=Path.home() / ".config/pstack/models.json")
-    parser.add_argument("--harness", choices=sorted(HARNESSES))
-    parser.add_argument("--role")
-    parser.add_argument("--profile")
-    parser.add_argument("--index", type=int)
-    args = parser.parse_args()
-    try:
-        policy = validate(json.loads(args.policy.read_text(encoding="utf-8")))
-        if args.command == "validate":
-            print("PStack model policy is structurally valid; model availability still needs harness verification")
-        elif args.command == "ready":
-            require(args.harness, "ready requires --harness")
-            print(json.dumps(ready(policy, args.harness), ensure_ascii=False))
-        elif args.command == "resolve":
-            require(args.harness and args.role, "resolve requires --harness and --role")
-            print(json.dumps(resolve(policy, args.harness, args.role, args.profile, args.index), ensure_ascii=False))
+def model_by_id(provider, model_id):
+    for model in provider.get("models", []):
+        if model.get("id") == model_id:
+            return model
+    return None
+
+
+def binding_problems(snapshot, provider_instance_id, model_id, options):
+    provider = provider_by_id(snapshot, provider_instance_id)
+    if provider is None:
+        return [f"provider {provider_instance_id!r} is not advertised in this snapshot"]
+    problems = []
+    reason = unavailable_reason(snapshot, provider)
+    if reason:
+        problems.append(f"provider {provider_instance_id!r} {reason}")
+    model = model_by_id(provider, model_id)
+    if model is None:
+        problems.append(
+            f"model {model_id!r} is not advertised for provider {provider_instance_id!r}"
+        )
+        return problems
+    descriptors = {
+        descriptor.get("id"): descriptor
+        for descriptor in model.get("options") or []
+        if isinstance(descriptor, dict)
+    }
+    for key, value in (options or {}).items():
+        descriptor = descriptors.get(key)
+        if descriptor is None:
+            problems.append(f"model {model_id!r} does not advertise option {key!r}")
+            continue
+        kind = descriptor.get("type")
+        if kind == "select":
+            advertised = [
+                choice.get("id")
+                for choice in descriptor.get("options") or []
+                if isinstance(choice, dict)
+            ]
+            if value not in advertised:
+                problems.append(
+                    f"option {key}={value!r} is not advertised for model {model_id!r}; "
+                    f"advertised: {advertised}"
+                )
+        elif kind == "boolean":
+            if not isinstance(value, bool):
+                problems.append(f"option {key} expects a boolean value")
         else:
-            require(args.harness and args.profile, "render-agent requires --harness and --profile")
-            print(render_agent(policy, args.harness, args.profile), end="")
+            problems.append(f"option {key!r} advertises unsupported type {kind!r}")
+    return problems
+
+
+def ready(policy, snapshot=None):
+    result = {"structural": True, "pool": len(policy["pool"])}
+    if snapshot is None:
+        result["advertised"] = "not-checked"
+    else:
+        failures = []
+        for entry in policy["pool"]:
+            problems = binding_problems(
+                snapshot,
+                entry["providerInstanceId"],
+                entry["model"],
+                entry.get("options", {}),
+            )
+            if problems:
+                failures.append({"id": entry["id"], "problems": problems})
+        result["advertised"] = {"verified": not failures}
+        if failures:
+            result["advertised"]["failures"] = failures
+    result["invocation"] = (
+        "unverified: only a live delegated call that succeeds can confirm the target runs"
+    )
+    return result
+
+
+def resolve(
+    policy,
+    snapshot=None,
+    entry_id=None,
+    provider_instance_id=None,
+    model=None,
+    options=None,
+    authorize_explicit=None,
+):
+    options = dict(options or {})
+    if entry_id is not None:
+        require(
+            provider_instance_id is None and model is None and not options,
+            "--id resolves one saved pool entry and cannot be combined with target flags",
+        )
+        entry = next((item for item in policy["pool"] if item["id"] == entry_id), None)
+        require(entry is not None, f"unknown pool entry id: {entry_id!r}")
+        target = {
+            "source": "pool",
+            "id": entry["id"],
+            "providerInstanceId": entry["providerInstanceId"],
+            "model": entry["model"],
+            "options": dict(entry.get("options", {})),
+        }
+    else:
+        require(
+            provider_instance_id and model,
+            "resolve needs --id, or --provider-instance-id with --model",
+        )
+        match = next(
+            (
+                item
+                for item in policy["pool"]
+                if item["providerInstanceId"] == provider_instance_id
+                and item["model"] == model
+                and dict(item.get("options", {})) == options
+            ),
+            None,
+        )
+        if match is not None:
+            target = {
+                "source": "pool",
+                "id": match["id"],
+                "providerInstanceId": match["providerInstanceId"],
+                "model": match["model"],
+                "options": dict(match.get("options", {})),
+            }
+        else:
+            require(
+                isinstance(authorize_explicit, str) and authorize_explicit.strip(),
+                f"{provider_instance_id}/{model} with options {options} is not a saved "
+                "pool combination. The pool is not expanded automatically: get the "
+                "user's explicit authorization for this task, then retry with "
+                "--authorize-explicit carrying that instruction as evidence. This "
+                "script cannot verify consent and is not a permission check.",
+            )
+            target = {
+                "source": "explicit",
+                "providerInstanceId": provider_instance_id,
+                "model": model,
+                "options": options,
+                "authorization": authorize_explicit.strip(),
+            }
+    if snapshot is not None:
+        problems = binding_problems(
+            snapshot, target["providerInstanceId"], target["model"], target["options"]
+        )
+        require(not problems, "; ".join(problems))
+        target["advertised"] = "verified"
+    else:
+        target["advertised"] = "not-checked"
+    target["invocation"] = "unverified"
+    return target
+
+
+def propose(snapshot, provider_instance_id, model_id):
+    provider = provider_by_id(snapshot, provider_instance_id)
+    require(
+        provider is not None,
+        f"provider {provider_instance_id!r} is not advertised in this snapshot",
+    )
+    model = model_by_id(provider, model_id)
+    require(
+        model is not None,
+        f"model {model_id!r} is not advertised for provider {provider_instance_id!r}",
+    )
+    descriptors = []
+    for descriptor in model.get("options") or []:
+        item = {
+            "id": descriptor.get("id"),
+            "label": descriptor.get("label"),
+            "type": descriptor.get("type"),
+        }
+        if "description" in descriptor:
+            item["description"] = descriptor["description"]
+        if "currentValue" in descriptor:
+            item["currentValue"] = descriptor["currentValue"]
+        if "promptInjectedValues" in descriptor:
+            item["promptInjectedValues"] = list(descriptor["promptInjectedValues"])
+        if descriptor.get("type") == "select":
+            choices = []
+            for choice in descriptor.get("options") or []:
+                entry = {"id": choice.get("id"), "label": choice.get("label")}
+                if "description" in choice:
+                    entry["description"] = choice["description"]
+                if "isDefault" in choice:
+                    entry["isDefault"] = choice["isDefault"]
+                choices.append(entry)
+            item["choices"] = choices
+        descriptors.append(item)
+    return {
+        "providerInstanceId": provider_instance_id,
+        "model": model_id,
+        "label": model.get("label"),
+        "runnable": unavailable_reason(snapshot, provider) is None,
+        "constraints": [str(item) for item in provider.get("constraints") or []],
+        "options": descriptors,
+        "proposalRule": (
+            "No value is ranked here: descriptor order has no guaranteed strength "
+            "semantics. Recommend a value only when the descriptor's label, "
+            "description, default, promptInjectedValues, or current provider evidence "
+            "establishes it; otherwise show the choices and ask. Never treat a "
+            "non-reasoning option (serviceTier, fastMode, contextWindow, agent) as a "
+            "reasoning setting."
+        ),
+    }
+
+
+def make_entry_id(taken, provider_instance_id, model_id):
+    slug = re.sub(r"[^a-z0-9]+", "-", f"{provider_instance_id}-{model_id}".lower()).strip("-")
+    if not slug or not slug[0].isalpha():
+        slug = f"target-{slug}".strip("-")
+    slug = slug[:64].rstrip("-")
+    candidate = slug
+    suffix = 2
+    while candidate in taken:
+        tail = f"-{suffix}"
+        candidate = slug[: 64 - len(tail)].rstrip("-") + tail
+        suffix += 1
+    return candidate
+
+
+def convert_v1(policy):
+    require(isinstance(policy, dict), "v1 policy must be a JSON object")
+    require(policy.get("version") == 1, "convert expects a version 1 policy")
+    profiles = policy.get("profiles")
+    harnesses = policy.get("harnesses")
+    roles = policy.get("roles")
+    require(isinstance(profiles, dict) and profiles, "v1 policy has no profiles")
+    require(isinstance(harnesses, list) and harnesses, "v1 policy has no harnesses")
+    require(isinstance(roles, dict) and roles, "v1 policy has no roles")
+
+    role_scope = {}
+    for role, route in roles.items():
+        if not isinstance(route, dict):
+            continue
+        default = route.get("default")
+        names = [default] if isinstance(default, str) else []
+        if isinstance(default, list):
+            names = [name for name in default if isinstance(name, str)]
+        if isinstance(route.get("allowed"), list):
+            names += [name for name in route["allowed"] if isinstance(name, str)]
+        for name in names:
+            role_scope.setdefault(name, set()).add(role)
+
+    drafts = {}
+    dropped = []
+    for profile in sorted(profiles):
+        targets = profiles[profile]
+        if not isinstance(targets, dict):
+            dropped.append({"profile": profile, "reason": "v1 profile is not an object"})
+            continue
+        for harness in harnesses:
+            spec = targets.get(harness)
+            if not isinstance(spec, dict):
+                dropped.append(
+                    {"profile": profile, "harness": harness, "reason": "no entry for this harness"}
+                )
+                continue
+            if spec.get("selection") == "inherit-parent":
+                dropped.append(
+                    {
+                        "profile": profile,
+                        "harness": harness,
+                        "reason": "inherit-parent is not a concrete target and has no v2 equivalent",
+                    }
+                )
+                continue
+            model = spec.get("model")
+            if not isinstance(model, str) or not model:
+                dropped.append(
+                    {"profile": profile, "harness": harness, "reason": "no concrete model"}
+                )
+                continue
+            options = {}
+            if isinstance(spec.get("reasoning_effort"), str):
+                options["reasoning_effort"] = spec["reasoning_effort"]
+            if isinstance(spec.get("options"), dict):
+                for key, value in spec["options"].items():
+                    if isinstance(value, (str, bool)):
+                        options[key] = value
+            key = (harness, model, json.dumps(options, sort_keys=True))
+            draft = drafts.get(key)
+            if draft is None:
+                draft = {
+                    "providerInstanceId": harness,
+                    "model": model,
+                    "options": options,
+                    "v1Profiles": [],
+                    "v1Roles": set(),
+                }
+                drafts[key] = draft
+            draft["v1Profiles"].append(profile)
+            draft["v1Roles"].update(role_scope.get(profile, ()))
+
+    taken = set()
+    review = []
+    pool = []
+    for draft in drafts.values():
+        entry_id = make_entry_id(taken, draft["providerInstanceId"], draft["model"])
+        taken.add(entry_id)
+        warnings = [
+            "v1 role restrictions do not carry into the v2 pool: a saved entry is "
+            "authorized for every task role. Confirm this entry or remove it.",
+            "re-verify the model id, option ids, and option values against this "
+            "thread's capability snapshot; v1 harness-native names may differ from "
+            "T3 option descriptors.",
+        ]
+        review.append(
+            {
+                "id": entry_id,
+                "providerInstanceId": draft["providerInstanceId"],
+                "model": draft["model"],
+                "options": draft["options"],
+                "v1Profiles": draft["v1Profiles"],
+                "v1Roles": sorted(draft["v1Roles"]),
+                "warnings": warnings,
+            }
+        )
+        pool.append(
+            {
+                "id": entry_id,
+                "providerInstanceId": draft["providerInstanceId"],
+                "model": draft["model"],
+                "options": draft["options"],
+            }
+        )
+    return {
+        "migrationRequired": True,
+        "sourceVersion": 1,
+        "notes": [
+            "This is a draft for review; this helper never writes the policy file.",
+            "v1 role restrictions are not preserved: v2 has one shared pool.",
+            "Save only after the user confirms each entry and after option ids are "
+            "re-verified against the current capability snapshot.",
+        ],
+        "dropped": dropped,
+        "review": review,
+        "proposed": {"version": 2, "pool": pool},
+    }
+
+
+def parse_option_flags(flags):
+    options = {}
+    for flag in flags:
+        require("=" in flag, f"--option expects KEY=VALUE, got {flag!r}")
+        key, _, raw = flag.partition("=")
+        require(
+            isinstance(key, str) and OPTION_KEY.fullmatch(key),
+            f"invalid option key {key!r}",
+        )
+        require(key not in options, f"duplicate option {key!r}")
+        if raw in {"true", "false"}:
+            options[key] = raw == "true"
+        else:
+            require(is_token(raw), f"invalid value for option {key!r}")
+            options[key] = raw
+    return options
+
+
+def load_snapshot(source):
+    text = sys.stdin.read() if str(source) == "-" else Path(source).read_text(encoding="utf-8")
+    return validate_snapshot(json.loads(text))
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("command", choices=["validate", "ready", "resolve", "propose", "convert"])
+    parser.add_argument("--policy", type=Path, default=Path.home() / ".config/pstack/models.json")
+    parser.add_argument(
+        "--snapshot",
+        type=Path,
+        help="file with the orchestrator_capabilities JSON, or - for stdin",
+    )
+    parser.add_argument("--id", dest="entry_id")
+    parser.add_argument("--provider-instance-id")
+    parser.add_argument("--model")
+    parser.add_argument("--option", action="append", default=[], metavar="KEY=VALUE")
+    parser.add_argument(
+        "--authorize-explicit",
+        metavar="REASON",
+        help=(
+            "the user's actual instruction authorizing a one-off target; supplied as "
+            "evidence by the caller, not verified by this script"
+        ),
+    )
+    parser.add_argument("--harness", help=argparse.SUPPRESS)
+    args = parser.parse_args(argv)
+    try:
+        if args.command == "propose":
+            require(args.snapshot is not None, "propose requires --snapshot")
+            require(
+                args.provider_instance_id and args.model,
+                "propose requires --provider-instance-id and --model",
+            )
+            print(
+                json.dumps(
+                    propose(load_snapshot(args.snapshot), args.provider_instance_id, args.model),
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+            return 0
+        raw = json.loads(args.policy.read_text(encoding="utf-8"))
+        if args.command == "convert":
+            print(json.dumps(convert_v1(raw), indent=2, ensure_ascii=False))
+            return 0
+        policy = validate(raw)
+        require(
+            args.harness is None,
+            "--harness belonged to the version 1 per-harness role policy and is not "
+            "part of the v2 shared pool; role-based skills are not migrated by this "
+            "revision (see references/model-routing.md).",
+        )
+        snapshot = load_snapshot(args.snapshot) if args.snapshot else None
+        if args.command == "validate":
+            print("PStack model pool is structurally valid; availability and invocation are not checked")
+        elif args.command == "ready":
+            result = ready(policy, snapshot)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+            advertised = result["advertised"]
+            if isinstance(advertised, dict) and not advertised["verified"]:
+                print("not ready: advertised capability check failed", file=sys.stderr)
+                return 1
+        elif args.command == "resolve":
+            target = resolve(
+                policy,
+                snapshot,
+                args.entry_id,
+                args.provider_instance_id,
+                args.model,
+                parse_option_flags(args.option),
+                args.authorize_explicit,
+            )
+            print(json.dumps(target, indent=2, ensure_ascii=False))
     except (OSError, json.JSONDecodeError, PolicyError) as exc:
         print(f"PStack model policy error: {exc}", file=sys.stderr)
         return 1

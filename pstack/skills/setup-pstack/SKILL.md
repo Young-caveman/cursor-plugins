@@ -1,42 +1,57 @@
 ---
 name: setup-pstack
-description: Configure PStack's role-based model routing for Codex and OpenCode. Use for /setup-pstack, "configure pstack models", or changing PStack's reasoning and model choices.
+description: Configure PStack's user-owned model pool for T3 Code sessions. Use for /setup-pstack, "configure pstack models", or changing PStack's model and reasoning choices.
 ---
 
-# Set up PStack model routing
+# Set up the PStack model pool
 
-Keep one user-owned policy at `~/.config/pstack/models.json`. It records **intent**: named model profiles, each role's default profile, and the profiles that role may choose at runtime. The policy is the source of truth. Harness configuration is an output of setup, not a second place to choose PStack models. Read [the policy and adapter contract](references/model-routing.md) when creating, changing, or consuming this configuration.
+Keep one user-owned policy at `~/.config/pstack/models.json`. Version 2 records a **pool of concrete delegation targets**: each entry names a T3 `providerInstanceId`, a model ID, and the option values confirmed for it. The pool is shared by every task role; there are no mandatory per-role tables or fixed combinations. Read [the pool contract](references/model-routing.md) before creating or changing the policy.
 
-## 1. Inspect the active harness
+T3 Code is the runtime boundary. Discover what can run with `orchestrator_capabilities` in this thread and pass the resolved `providerInstanceId`, `model`, and `options` to `delegate_task`. Provider catalogs and option names differ: Codex advertises `reasoningEffort`, OpenCode advertises `variant`, Claude advertises `effort`, and options such as `serviceTier`, `fastMode`, and `contextWindow` are separate. Discover each provider from this thread's snapshot; never carry a model or option name from another provider, harness, or older session.
 
-Identify whether this session is Codex, OpenCode, or another wrapper such as T3 Code around one of them. Inspect the actual subagent tool schema; do not infer it from the outer UI. Record whether a call can choose an agent type, a model, and a reasoning setting separately. Check the installed harness version and its effective user/project model settings. This adapter supports OpenCode 1.x; if the active OpenCode has another major version, do not generate or apply OpenCode profiles until that version has an adapter. Existing harness settings may override a generated default or prevent parent inheritance.
+## 1. Discover this thread's capabilities
 
-Collect model IDs the user can actually select in the active harness only. Use that harness's own model picker or catalog; a catalog entry alone does not prove entitlement. Do not fill the other harness's mappings from this session. A shell probe of another harness's CLI cannot prove entitlement or effective settings there, so it cannot produce a confirmed mapping. Confirm each requested reasoning effort or variant for that model. Save only confirmed model/effort combinations in a ready policy. If availability cannot be checked, ask the user to provide or confirm a selectable ID before saving; this schema has no unverified-status field, so do not store unverified mappings or silently substitute another model. Codex model IDs, OpenCode 1.x `provider/model` IDs, and provider-specific reasoning options are different namespaces.
+Call `orchestrator_capabilities` and save the result as JSON for the helper. For each provider record `providerInstanceId`, `models`, `canRunChildTask`, `canRunCrossProviderChildTask`, and `constraints`. Any runnable provider from this snapshot is eligible, including providers other than the session's own; a provider with constraints or without child-task capability is not a pool target. The helper contains no per-provider claims, including for Claude.
 
-If `~/.config/pstack/models.json` exists, read it as the current choice. An old `~/.cursor/rules/pstack-models.mdc` may inform migration, but its Cursor slugs and `auto` marker are not valid Codex/OpenCode IDs. Do not copy them without translation and validation.
+For a model the user is considering, run:
 
-## 2. Agree on routing and cost
+```bash
+python3 scripts/model_policy.py propose --snapshot <capabilities.json> --provider-instance-id <id> --model <model>
+```
 
-Configure only the active harness. Do not ask which other harnesses to configure and do not fill their entries; each harness is configured by a session running in that harness. If the user wants another harness configured, tell them to run setup there. Show the effective parent/default model of the active harness, then offer named profiles such as `fast`, `balanced`, and `deep`; these are user-editable names, not model tiers, and their names are shared across harnesses. For each profile show the exact model ID and supported reasoning setting in the active harness. Reasoning effort changes compute use; it is not a guarantee of answer quality or a monetary spending cap.
+It prints every option descriptor for that model: label, type, description, current value, per-choice labels/descriptions/defaults, and `promptInjectedValues` when advertised. It reads no policy file, so it also works before one exists or when the saved policy is still version 1.
 
-Show every role in the policy contract. A role has one default profile and may list additional **allowed** profiles that its skill can select based on task difficulty. The user may lock a role by allowing only its default. Panel roles contain ordered profile lists; each entry launches one agent, including repeated or inherited entries. `arena cross-judge pool` is a candidate pool for one judge. `swarm workers` is the default profile for each worker unless the user specifies race arms. Show these counts and likely cost before accepting the choices. Preserve explicit user model requirements and any restrictions on provider, reasoning, or escalation.
+Descriptor order has no guaranteed strength semantics and the helper ranks nothing. Recommend a value only when the descriptor's own label, description, default, `promptInjectedValues`, or current provider evidence establishes it; otherwise show the advertised choices and ask. Never sort by hand, never assume `max` exists, and never treat `serviceTier`, `fastMode`, `contextWindow`, `agent`, or similar options as reasoning settings or raise them automatically.
 
-Treat `inherit-parent` as an intent, not as a model ID. Offer it only when the active harness can resolve it as requested. In Codex, omitting a spawn model may still use `agents.default_subagent_model`, `agents.default_subagent_reasoning_effort`, or a custom agent's settings. In OpenCode, an unconfigured subagent model inherits its caller's session model. If the current invocation path cannot guarantee inheritance, mark that profile unsupported for that path and request a concrete model or a configuration change.
+If `~/.config/pstack/models.json` exists, read it before changing anything:
 
-## 3. Save one policy and sync native configuration
+- **Version 2**: treat it as the user's current pool.
+- **Version 1**: leave the file untouched. Run `python3 scripts/model_policy.py convert` to print a reviewed draft. Explain that v1 role restrictions do not carry into the shared pool, re-verify each entry against the current snapshot, and convert only entries the user confirms.
 
-Write `~/.config/pstack/models.json` in the [documented schema](references/model-routing.md), preserving existing unrelated user settings and the other harness's already-saved profile entries. Fill only the active harness's key inside each profile; never overwrite or remove the other harness's key, even when re-running. Add the active harness to `harnesses` only once every profile has a confirmed entry for it. A saved policy may contain only confirmed model/effort combinations; if a required mapping remains unverified, ask the user to confirm it before saving. The current user's explicit task choice outranks a role default. A skill may switch only to a profile in that role's `allowed` list and must state the chosen profile when it differs from the default. No automatic move to a higher reasoning tier or another model family.
+## 2. Agree on the pool
 
-Where native agent profiles are usable, create or update only the active harness's PStack-namespaced files: `$CODEX_HOME/agents/pstack-<profile>.toml` (or `~/.codex/agents/` when `CODEX_HOME` is unset) when the active harness is Codex, or `$XDG_CONFIG_HOME/opencode/agents/` (or `~/.config/opencode/agents/` when `XDG_CONFIG_HOME` is unset) when it is OpenCode 1.x. Do not generate the other harness's native files from this session. Keep the same profile names as the policy. Do not rewrite Codex's main `config.toml`, `opencode.json`, or project settings merely to install PStack. Preserve non-PStack files and any user edits to a previously generated file; show a diff and ask how to reconcile a conflict. A native profile must contain the policy's exact model and supported effort/variant, with no role-specific instructions, tools, or permission changes. Standalone Codex agent files require `developer_instructions`; use only a neutral instruction to follow the invoking task and its constraints. OpenCode 1.x uses `model: provider/model` and provider-specific agent options such as `reasoningEffort`; do not assume `model#variant` works there. For another OpenCode major version, report the adapter as unsupported and do not apply its files.
+Ask which discovered models belong in the pool. The pool is shared across all task roles, so one selection covers every PStack workflow; a model can also stay out. For each selected model, show the exact model ID, label, defaults, and the full reasoning choices; recommend a strongest value only when evidence establishes it, otherwise ask. The user accepts, picks another advertised value, or leaves an option at its provider default. Store only confirmed, advertised values. Do not promise billing, cost-cap, concurrency, retry, or nesting behavior; reasoning effort and pool size affect cost separately.
 
-When the available subagent tool can pass model/effort but cannot select a native profile agent, resolve the policy profile into explicit invocation parameters. This is the path exposed by some Codex sessions under T3 Code. When a workflow requires an existing agent type or prompt, preserve it and use explicit parameters if supported; model routing must not silently replace that agent's instructions. Native files are useful only on invocation paths that actually load them. If neither route can honor a choice, report the mismatch before running work.
+Setup is a default, not an exemption. Preserve a specialist agent's own instructions and tools, but the pool or an existing explicit authorization still governs every routed call's model. When a specialist or native path selects its own model or reasoning option, verify the effective model and options match a pool entry or the authorization before running; a changed reasoning option is an out-of-pool target. The main chat model stays unchanged.
 
-## 4. Verify and report
+## 3. Save the policy
 
-Use `scripts/model_policy.py validate` after saving the policy, `ready --harness <active>` to prove the active harness is fully configured, and `resolve` for each role/profile that will be used. Use `render-agent` when generating native agent files, then validate their TOML/frontmatter syntax. These checks establish structure only. Separately confirm model availability, reasoning support, and effective config precedence with the active harness. For an unresolvable model, stop that call and ask for a confirmed replacement or use a fallback the user explicitly approved in the policy. Never pick the closest or highest-reasoning model on your own.
+Write version 2 to `~/.config/pstack/models.json`, preserving unrelated user settings. Each entry stores `providerInstanceId`, `model`, and concrete `options`. Later setup runs start from the saved values and never silently upgrade them; changing a saved combination requires the user. If migration applies, save only the reviewed entries.
 
-Report the saved policy path, generated native files, whether the active harness is now ready, any mappings left unsaved pending confirmation, precedence conflicts, and whether a new session is needed to load them. If the other harness has no confirmed entries, state that it is unconfigured and needs its own setup session there; do not offer to configure it from here. Re-running setup updates PStack's own policy and generated files; it does not change the user's main chat model.
+Then verify:
 
-## 5. Offer project verification once
+```bash
+python3 scripts/model_policy.py validate
+python3 scripts/model_policy.py ready --snapshot <capabilities.json>
+python3 scripts/model_policy.py resolve --id <entry-id> --snapshot <capabilities.json>
+```
 
-As before, check whether the project already has a way to drive the real app for proof. If it has neither a `verify-*` skill nor an existing harness, offer once to create a project-local verification skill. Do so only if the user accepts; this is separate from model routing.
+`validate` proves structure. `ready --snapshot` proves each saved entry is currently advertised and each saved option value is legal. Neither proves a target runs: only delegated work that succeeds does, and setup does not spend model calls to find out. Report invocation as unverified.
+
+## 4. Use the pool when delegating
+
+`resolve` is the dry run for choosing and checking targets. Pick one pool entry for a call, or several when a task benefits from different strengths; temporary mixtures for comparison are allowed. A target outside the saved pool needs the user's explicit authorization for the current task; the current instruction counts, so do not ask twice. `--authorize-explicit` carries that actual instruction as evidence, keeps the target one-off, and does not add it to the policy; the helper cannot verify consent, so never invent an instruction or treat the flag as a permission check. Nested subagents inherit the same authorization scope. When a workflow requires a specific agent type or prompt, preserve it and supply the pool target through the invocation parameters.
+
+## 5. Report
+
+Report the providers discovered, the saved pool entries, that the policy is structurally valid and advertised as available, that invocation is unverified until real delegated work succeeds, any v1 migration left for review, and whether a new session is needed. This skill configures models only: it does not offer or create project verification skills, and role-based skills are not migrated by this revision.

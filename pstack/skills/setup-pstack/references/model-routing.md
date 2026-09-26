@@ -1,54 +1,83 @@
-# PStack model routing contract
+# PStack model-pool contract
 
-`~/.config/pstack/models.json` is the only PStack source of concrete model choices. Skills name roles and, when permitted, select a profile. The active harness resolves the profile into a model and reasoning option. Native agent files may mirror profiles for direct harness use; a skill must not treat their presence as proof that its current subagent tool uses them.
+`~/.config/pstack/models.json` is the only PStack source of concrete model choices. Version 2 records one **pool** of delegation targets shared by every task role. T3 Code is the runtime boundary: a target is the `providerInstanceId`, `model`, and `options` that `delegate_task` accepts, discovered from the current thread's `orchestrator_capabilities`.
 
-## Policy shape
-
-The example IDs below are placeholders. A saved ready policy may contain only model IDs and reasoning settings confirmed selectable in the active harness. If setup cannot confirm a combo, stop and ask the user to provide or confirm it; this schema has no unverified-status state.
-
-The OpenCode adapter and policy format in this version target OpenCode 1.x (tested with 1.18.31). Setup must check the installed major version. For another major version, do not render or apply OpenCode native profiles until a version-specific adapter is defined. OpenCode 1.x keeps the model as `provider/model` and passes reasoning options separately; do not append `#variant` to the model ID.
+## Policy v2
 
 ```json
 {
-  "version": 1,
-  "harnesses": ["codex", "opencode"],
-  "profiles": {
-    "fast": {
-      "codex": {"model": "<codex-model>", "reasoning_effort": "medium"},
-      "opencode": {"model": "<provider/model>", "options": {"reasoningEffort": "medium"}}
+  "version": 2,
+  "pool": [
+    {
+      "id": "codex-gpt-6-astra-high",
+      "providerInstanceId": "codex",
+      "model": "gpt-6-astra",
+      "options": {"reasoningEffort": "high"}
     },
-    "parent": {
-      "codex": {"selection": "inherit-parent"},
-      "opencode": {"selection": "inherit-parent"}
+    {
+      "id": "opencode-deepseek-v4-1-flash-max",
+      "providerInstanceId": "opencode",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "options": {"variant": "max"}
     }
-  },
-  "roles": {
-    "feature": {"default": "fast", "allowed": ["fast", "parent"]},
-    "recall fanout": {"default": "fast", "allowed": ["fast"]},
-    "arena runners": {"default": ["fast", "parent"]},
-    "arena cross-judge pool": {"default": ["fast", "parent"]}
-  }
+  ]
 }
 ```
 
-A ready policy must define every role below. Each single-profile role has `default` and `allowed`, with the default included in `allowed`. Runtime selection outside `allowed` requires a new user instruction or setup change. A list role's `default` is an ordered list; repetitions are intentional. Profiles may use `selection: "inherit-parent"` instead of `model` only after the active invocation path has been checked for genuine inheritance. `options` contains provider-specific OpenCode agent options, not a universal reasoning ladder. Do not turn an unsupported effort into part of a model ID.
+- `id`: stable lowercase reference for `resolve` and reports; unique in the pool.
+- `providerInstanceId`: exact id from this thread's capability snapshot.
+- `model`: exact model id advertised for that provider instance.
+- `options`: optional map of advertised option ids to string or boolean values. Omitted options keep the provider default. Store only values the user confirmed.
 
-Single-profile roles: `feature`, `refactoring`, `bug-fix`, `perf-issue`, `hillclimb`, `judgment and prose`, `hardest tasks`, `how explorer`, `how explainer`, `why investigators`, `why synthesizer`, `reflect tooling`, `reflect judgment, divergent, synthesizer`, `swarm workers`, and `recall fanout`.
+The example is illustrative. A saved pool contains only model ids and option values that this thread advertised.
 
-List roles: `arena runners`, `arena cross-judge pool`, `architect runners`, and `interrogate reviewers`. The cross-judge pool selects one entry; the other list lengths set their agent counts.
+## Capability snapshot
 
-## Per-harness readiness
+`orchestrator_capabilities` returns `inheritedProviderInstanceId`, `inheritedModel`, and `providers[]`. Each provider carries `providerInstanceId`, `models[]` with `options[]` descriptors, `canRunChildTask`, `canRunCrossProviderChildTask`, and `constraints`. Save the JSON and pass it with `--snapshot`.
 
-Profile names and role routes are shared across harnesses; each profile holds one settings entry per harness. A setup session runs inside one harness and fills only that harness's entry in each profile; it must preserve the other harness's saved entries and never overwrite them. The `harnesses` list names the harnesses that are fully configured: every profile has a confirmed entry for them. A harness is **ready** when it is listed in `harnesses` and every role resolves to a confirmed mapping for that harness; check with `scripts/model_policy.py ready --harness <harness>`. poteto-mode must refuse to run in a harness that is not ready. A session in one harness cannot confirm another harness's model entitlements, so each harness gets its own setup run inside that harness.
+The helper uses:
 
-## Resolution at a call site
+- `providers[].providerInstanceId`, `models[].id`, and `models[].options`.
+- Descriptor type `select` (legal values are its `options[].id`) and `boolean` (legal value is `true`/`false`). Other descriptor types are not selectable.
+- `constraints`, `canRunChildTask`, `canRunCrossProviderChildTask`, and `inheritedProviderInstanceId` for runnable checks. A provider is runnable when it reports no constraints, advertises child tasks, and either is the inherited provider or advertises cross-provider child tasks.
 
-1. Honor the user's current explicit model or restriction. Otherwise use the role's default profile; switch within `allowed` only when the task justifies it and state the switch.
-2. Read the active harness's entry for that profile. Check it against the harness's current model catalog and effective config. Do not guess a replacement.
-3. If the subagent tool accepts explicit model and reasoning parameters, pass them, preserving a workflow-required agent type. If it instead selects a native profile agent, use the matching `pstack-<profile>` definition. A Codex custom agent's model settings can override spawn parameters, so verify the effective result when both are present.
-4. An inherited profile must resolve to the parent session's actual model and reasoning, not merely to a harness default. If this cannot be demonstrated, stop and request a concrete mapping.
-5. Record the requested profile and, when exposed by the harness, the effective model/effort. If they differ, report the mismatch rather than claiming the route succeeded.
+Option verification mirrors T3's own target validation: unknown option ids and values outside the advertised choices are rejected. Provider catalogs and option names are per-provider and change over time; Codex uses `reasoningEffort`, OpenCode uses `variant`, and Claude uses `effort` (label "Reasoning"), with `fastMode` and `contextWindow` on some models and `thinking` instead of `effort` on Haiku 4.5. Claude's `effort` choices vary by model and can include `ultracode` and `ultrathink`; `ultrathink` is also advertised as a `promptInjectedValues` entry. `contextWindow` is applied as a model suffix, not a separate API flag. Claude is discovered like any other provider; the helper hardcodes no support claims for it.
 
-Setup uses `scripts/model_policy.py validate` after saving, `resolve` to check role/profile references, and `render-agent` when it creates a native profile file. These commands validate structure and produce configuration text; they do not prove model entitlement, reasoning support, or effective harness precedence.
+Claude models may remap a saved option value to a different runtime value via the provider's `effortMap` (for example a legacy model's `xhigh` running as `max`), and `orchestrator_capabilities` does not expose that mapping. Store what was advertised and tell the user a remap is possible; do not encode a remap table here, since it would go stale.
 
-The policy does not cap money spent. Panel size, retries, model prices, provider billing, and reasoning effort all affect cost separately.
+## Reasoning choices
+
+`propose` lists every descriptor for one model: id, label, type, description, current value, `promptInjectedValues` when advertised, and each select choice's label, description, and default flag. It reads no policy file, so it works before one exists and with a version 1 policy still in place.
+
+Descriptor order reflects the provider catalog and has no guaranteed strength semantics; the helper ranks nothing and reports no proposed value. Recommend a value only when the descriptor's own label, description, default, injected values, or current provider evidence establishes it; otherwise show the choices and ask. `serviceTier`, `fastMode`, `contextWindow`, `agent`, and similar options are never treated as reasoning settings. The user confirms, chooses another advertised value, or keeps the provider default.
+
+## Selection and authorization
+
+- One pool is shared across task roles. No per-role tables, cost caps, concurrency, retry, or nesting settings are required or implied.
+- A task may use one entry or several; temporary MOA combinations are allowed.
+- A combination outside the saved pool requires the user's explicit authorization for the current task. A current instruction counts, and the same authorization is not requested twice. `--authorize-explicit` carries the caller's evidence of that instruction, keeps the target one-off, and never writes to the pool; the helper cannot verify consent, so the caller must supply the real instruction and must not treat the flag as a permission check. Nested children share their parent call's authorization scope.
+- Specialist agents keep their own instructions and tools, but their models are not exempt: a routed call's effective model and options must match a pool entry or an existing explicit authorization, including when a specialist or native path selects them. Verify the effective target before the call runs. The main chat model is untouched.
+- PStack cannot guarantee provider billing behavior or enforce prompt-level spending limits. Reasoning effort, pool size, retries, and provider pricing affect cost separately.
+
+## Readiness levels
+
+`validate` proves structural validity only. `ready --snapshot` adds currently advertised availability: every pool entry must map to a runnable provider, an advertised model, and legal option values. Invocation success is a third level that no offline check proves; only a delegated call that succeeds does, and `ready` always reports `invocation: unverified`. A mismatch means stop and ask for a confirmed target; never guess a replacement.
+
+## CLI
+
+| command | purpose |
+|---|---|
+| `validate [--policy PATH]` | Structural check of the v2 policy; v1 reports migration required. |
+| `ready [--snapshot PATH\|-]` | Structure plus advertised availability for every pool entry. Exit 1 when snapshot verification fails. |
+| `resolve --id ID` | Dry-run a saved pool entry. |
+| `resolve --provider-instance-id ID --model M [--option KEY=VALUE]...` | Resolve an exact saved combination, or a one-off with `--authorize-explicit REASON`. `REASON` is the user's actual instruction supplied as caller evidence; the helper cannot verify consent. Boolean values use `true`/`false`. |
+| `propose --snapshot PATH\|- --provider-instance-id ID --model M` | Print descriptors, choices, and defaults; ranks nothing and reads no policy. |
+| `convert` | Print a reviewed v2 draft for a v1 file plus per-entry warnings. |
+
+`--snapshot -` reads the snapshot from stdin. The helper never writes user files and never invokes a model.
+
+## Migration from v1 and the legacy boundary
+
+Version 1 (`profiles`, `harnesses`, `roles`) is not read by this helper. The file is preserved, and `validate`, `ready`, and `resolve` fail with a migration-required diagnostic. `convert` prints a draft: each proposed entry carries the v1 profiles and roles that used it plus warnings that v1 role restrictions do not carry into the shared pool and that v1 harness-native option names must be re-verified against the current snapshot. Save only entries the user confirms.
+
+This revision covers model setup only. Role-based skills, including `poteto-mode` and the skills that name roles such as `feature`, `arena runners`, or `interrogate reviewers`, still expect the v1 role policy and are **not migrated** here. `poteto-mode`'s gate calls the removed `ready --harness` interface and now surfaces the migration diagnostic; complete role integration is future work. Native agent-file generation (`render-agent`) is removed as well: the T3 delegation target is the supported route.
