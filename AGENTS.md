@@ -9,7 +9,7 @@ Turn PStack (originally for Cursor) into the user's personal skill set for Codex
 ## Rules
 
 - Models live in one v2 pool, `~/.config/pstack/models.json`: `providerInstanceId` + model + confirmed options + optional `tier`. Anything outside the pool needs the user's explicit authorization.
-- Cost: `default`-tier entries (Luna max, DeepSeek, MiMo, Sonnet; cheap per the user) do the work; `escalation` entries (Opus 5.5; Astra if added) only for genuinely hard tasks.
+- Cost: the pool holds only cheap `default`-tier entries (Luna max, DeepSeek, MiMo, Sonnet 5). The user removed Opus 5.5 on 2026-09-27, so there is no `escalation` entry; a harder model needs the user's explicit authorization per task.
 - Never silently substitute a model or raise reasoning effort. Effort levels don't carry across models.
 - Invocation: principle skills, `unslop`, `typescript-best-practices`, and `setup-pstack` may auto-trigger; the 21 workflow skills keep `disable-model-invocation: true` (Claude-only field).
 - PStack writes nothing tracked into a user project: no lock files, no `.gitignore` entries, no pointer lines in the project's `AGENTS.md`.
