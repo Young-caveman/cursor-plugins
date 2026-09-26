@@ -44,6 +44,7 @@ Verified from that source on 2026-09-27:
 | this worktree (`t3-orchestration`) | PStack source; edit skills here |
 | `/cave/t3code` (`yash/swiftui-orchestrator-v2-support`) | T3 fork source; read-only reference for T3 behavior, never edited from PStack work |
 | `/cave/Wisdio` (`develop1-engine`) | normal Wisdio work; no PStack |
+| Mac `~/coding/Wisdio` (`develop1-engine`, via `ssh mac`) | runs macOS-only steps; no PStack (see [Two machines](#two-machines)) |
 | `/cave/Wisdio-pstack` (`pstack-test`) | **test bench only** — Wisdio + PStack links in `.agents/skills` (Codex, OpenCode) and `.claude/skills` (Claude Code). Wisdio here is just the app under test; PStack stays project-agnostic and never mentions Wisdio in its own docs or skills. |
 
 ## Routine
@@ -58,6 +59,20 @@ Scripts are in `pstack/skills/setup-pstack/scripts/`.
 6. Commit here; log results in `pstack/develop-log/`.
 
 Update the test copy: `git -C /cave/Wisdio-pstack merge develop1-engine`.
+
+## Two machines
+
+The Mac has no PStack: no source, pool, or links. It only runs what reaches it through Wisdio's git history. The two machines stay in sync only through commits on GitHub `develop1-engine`: uncommitted work and the local-only `pstack-test` branch never travel. Last synced 2026-09-27 at `f1184e1`.
+
+- PStack links never travel: `pstack_link.py` excludes each link by exact name in `.git/info/exclude`. A skill PStack *generates* (for example `.agents/skills/verify-<app>/` plus its `.claude/skills` relative link) is a real directory, so git tracks it like any Wisdio file.
+- Sending a generated skill to the Mac:
+  1. Commit it on the bench (`pstack-test`), in a commit that holds only the skill.
+  2. `git -C /cave/Wisdio cherry-pick <sha>`, then `git -C /cave/Wisdio push origin develop1-engine`. Never push `pstack-test`.
+  3. On the Mac: `cd ~/coding/Wisdio && git pull --rebase origin develop1-engine`.
+  4. Only then run `bench_check.py --reset`: a reset before step 2 destroys the skill.
+- Before any Mac step, check both sides are at the same commit: `git -C /cave/Wisdio rev-parse --short HEAD` and `ssh mac 'git -C ~/coding/Wisdio rev-parse --short HEAD'`. If the Mac has uncommitted changes, ask the user before committing or discarding them.
+- Mac git over non-interactive SSH: its `origin` (`git@github.com`) fails there with `Permission denied (publickey)`, because the key agent only exists in the user's own terminal. Add `-c url.git@github-wisdio:.insteadOf=git@github.com:` to each `git` call instead, and don't change the remote. The Mac shell is zsh, so write the flag out; a variable holding it won't split into words.
+- The Mac only *runs* things: an agent there is started by the user or through Wisdio's `t3-thread-handoff` (see [T3 target](#t3-target)).
 
 ## Tools
 
