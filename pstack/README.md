@@ -27,6 +27,7 @@ python3 skills/setup-pstack/scripts/pstack_link.py --project /path/to/repo \
 - The links stay out of git through a managed block in the repo's `.git/info/exclude`. PStack adds no lock file, no `.gitignore` entry, and no line in your project's `AGENTS.md`.
 - Rerun the command after you add, rename, or remove a skill. Text edits need no relinking: Claude Code and Codex see them live; OpenCode caches skills, so start a new session.
 - `pstack_doctor.py --project /path/to/repo` reports drift between the source and a project. `harness_discovery.py --project /path/to/repo` shows which skills Codex and Claude Code actually offered their model in the newest session there.
+- To test PStack on a real repo, give it a separate worktree on its own branch. `bench_check.py --project <bench> --base <branch>` lists what a test run left there; `--reset` asks, then resets the bench to the base branch and keeps the links.
 - `pstack_link.py` handles project installs. Global installation is not covered by this script.
 
 ## Get started
@@ -38,7 +39,7 @@ Two steps:
 
 > **Delegation.** Every workflow that spawns agents uses T3's `orchestrator_capabilities` and the tools in [`t3-delegation.md`](./skills/setup-pstack/references/t3-delegation.md): cheap `default`-tier pool entries normally, `escalation` entries only for hard work. `delegate_task` children share the parent's checkout; parallel writers get their own worktree through `t3_thread_launch`.
 
-> **Invocation.** The principles, `unslop`, `typescript-best-practices`, and `setup-pstack` may trigger on their own. The twenty-one workflow skills carry `disable-model-invocation: true`, which only Claude Code honours: there they run only when you type `/name`. Codex and OpenCode ignore that field.
+> **Invocation.** The principles, `unslop`, `typescript-best-practices`, and `setup-pstack` may trigger on their own. The twenty-one workflow skills run only when you ask for them by name or a workflow you started routes to one. Claude Code enforces this through `disable-model-invocation: true`; Codex and OpenCode ignore that field, so each workflow's description states the rule for the model instead.
 
 Skill names shown with a leading slash below are shorthand for the harness's skill selector; they are not all literal slash commands.
 

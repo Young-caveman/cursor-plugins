@@ -1,6 +1,6 @@
 ---
 name: automate-me
-description: "Use for \"automate me\", \"create/update/refresh my -mode skill\", \"turn/capture my preferences or working style into a skill\", or wanting agents to follow how the user works. Drafts or revises a personal -mode skill from recent transcripts."
+description: "Run only when the user asks for this skill by name or a workflow the user started routes here. Use for \"automate me\", \"create/update/refresh my -mode skill\", \"turn/capture my preferences or working style into a skill\", or wanting agents to follow how the user works. Drafts or revises a personal -mode skill from recent transcripts."
 disable-model-invocation: true
 ---
 
@@ -70,7 +70,7 @@ Use `skill-creator` when installed; otherwise author directly per the [authoring
 - Handle: the user's first name or chosen identifier.
 - Frontmatter `description`: trigger on their name + `/<handle>-mode` + "work in their style", not on generic keywords like "write code" or "review PR".
 - Frontmatter formatting: keep `description` as one YAML scalar. Quote it or use `description: >-` with indented continuation lines when punctuation or wrapping requires it.
-- Frontmatter `disable-model-invocation: true` by default. Opt out only if the user explicitly wants their mode to apply on every turn.
+- Frontmatter `disable-model-invocation: true` by default, with a description that opens "Run only when the user asks for this skill by name or a workflow the user started routes here." (Codex and OpenCode ignore the field). Opt out of both only if the user explicitly wants their mode to apply on every turn.
 
 ### 5. Iterate on prose
 

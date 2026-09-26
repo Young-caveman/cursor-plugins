@@ -1,6 +1,6 @@
 ---
 name: tdd
-description: "Use only when the user explicitly asks for TDD, a failing test, or a regression test, OR when the bug has an obvious cheap local test target. Skip when the test path is unclear, expensive, integration-heavy, or not requested."
+description: "Run only when the user asks for this skill by name or a workflow the user started routes here. Use for TDD, a failing test first, or a regression test for a bug with a cheap local test target. Skip when the test path is unclear, expensive, or integration-heavy."
 disable-model-invocation: true
 ---
 

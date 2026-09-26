@@ -1,6 +1,6 @@
 ---
 name: bro
-description: Restate the last message in plain human language, with no jargon.
+description: Run only when the user asks for this skill by name or a workflow the user started routes here. Restate the last message in plain human language, with no jargon.
 disable-model-invocation: true
 ---
 
