@@ -2,16 +2,6 @@
 
 This page covers linking PStack into a project, choosing a shared model pool, and running a first task. PStack runs inside T3 Code with Codex, Claude Code, or OpenCode.
 
-## Why it's built this way
-
-No shoe fits every foot, so PStack ships as a workbench, not a monument. Three choices fall out of that:
-
-**Symlinks, not copies.** A copy is a fossil: it goes stale the second the source improves. A symlink means an edit to a skill is live in your project on the next turn — change it, run it against real work, keep what fits. You don't install PStack so much as tune it.
-
-**One pool in your home directory.** The models are what *your* T3 account can run — the same fact in every repo — so the pool lives in `~/.config/pstack/models.json`, not in your project. A per-project copy would just be another fossil.
-
-**Snapshots are the exception.** When a skill *writes* into your project — a generated `verify-<app>` skill is the big one — that file is a snapshot and it will drift. The doctor names what drifted; `/maintain-verification-skill` brings it back. Details under [What counts as drift](#what-counts-as-drift).
-
 ## Link the skills into your project
 
 Skills are symlinks to this checkout, so a text edit to a skill is live. From the `pstack` directory, preview and then apply:
@@ -40,12 +30,6 @@ python3 skills/setup-pstack/scripts/harness_discovery.py --project /path/to/repo
 
 `pstack_doctor.py` is a read-only report of drift between the source and the project. `harness_discovery.py` reads the newest Codex and Claude Code session logs for the project and lists which skills each harness actually offered its model; OpenCode records no such list, so ask the model there.
 
-## What counts as drift
-
-Skill *text* is always current — the links are symlinks, so an edit to the source is the edit in your project. What can go stale is anything a skill *writes into* the project: a generated `verify-<app>` skill, a leftover lock file, a link to a deleted skill, a real directory shadowing a link. Those are snapshots; the source moved on and they didn't.
-
-`pstack_doctor.py` names each one (`dangling-link`, `shadowing-copy`, `cursor-era-skill`, `lock-pins-live-source`, `unlinked-skill`, and friends). Fix links with `pstack_link.py --apply`; refresh a drifted verify skill with `/maintain-verification-skill`; delete other leftovers by hand once the doctor names them. The doctor can see that a snapshot mismatches the source, but it cannot yet tell *how old* a generated artifact is — version stamps for that are not built. Until then, regenerate instead of trusting an old copy.
-
 ## How skills get invoked
 
 The principle skills, `unslop`, `typescript-best-practices`, and `setup-pstack` may trigger on their own. The 21 workflow skills carry `disable-model-invocation: true`. Only Claude Code honours that field, so there they run only when you type `/name`. Codex and OpenCode ignore it, so select a workflow by name (`$poteto-mode` in Codex; ask the OpenCode agent to use the skill).
@@ -56,7 +40,7 @@ Invoke [`setup-pstack`](../../skills/setup-pstack/SKILL.md) from a T3 Code threa
 
 > **How workflows use the pool.** Every workflow that spawns agents uses T3's tools per [`t3-delegation.md`](../../skills/setup-pstack/references/t3-delegation.md): `default`-tier pool entries normally, `escalation`-tier entries only for genuinely hard work. `delegate_task` children share the parent's checkout; parallel writers get their own worktree through `t3_thread_launch`.
 
-Setup saves one shared pool at `~/.config/pstack/models.json`, and one setup covers every harness. Home, not project, because the models are what your T3 account can run — the same fact in every repo — and a per-project copy would fossilize the moment your account changes. Each entry has a unique `id`, a `providerInstanceId`, a model, its confirmed options, and an optional `tier` (`default` or `escalation`). Keep at least one `default` entry for routine work; setup asks which others are expensive enough to reserve for hard tasks. There are no per-role tables and no required cost, concurrency, or retry settings. Setup does not raise `serviceTier`, `fastMode`, or other non-reasoning options on its own and does not change your main chat model. Reasoning options differ per provider (Codex `reasoningEffort`, OpenCode `variant`, Claude `effort`), so a level never carries from one model to another. T3's Claude adapter can also remap some effort values, so check what actually ran.
+Setup saves one shared pool at `~/.config/pstack/models.json`, and one setup covers every harness. Each entry has a unique `id`, a `providerInstanceId`, a model, its confirmed options, and an optional `tier` (`default` or `escalation`). Keep at least one `default` entry for routine work; setup asks which others are expensive enough to reserve for hard tasks. There are no per-role tables and no required cost, concurrency, or retry settings. Setup does not raise `serviceTier`, `fastMode`, or other non-reasoning options on its own and does not change your main chat model. Reasoning options differ per provider (Codex `reasoningEffort`, OpenCode `variant`, Claude `effort`), so a level never carries from one model to another. T3's Claude adapter can also remap some effort values, so check what actually ran.
 
 You can inspect the pool with `python3 skills/setup-pstack/scripts/model_policy.py validate`, `list`, and `ready --snapshot <capabilities.json>`. `validate` checks structure and requires at least one `default` entry; `ready` checks advertised availability against a saved capabilities snapshot. Before each delegated call, resolve the entry against live capabilities. Only a successful delegated run proves the target works.
 

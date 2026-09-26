@@ -65,9 +65,10 @@ Update the test copy: `git -C /cave/Wisdio-pstack merge develop1-engine`.
 
 ## Next
 
-1. First real Wisdio task: run `/create-verification-skill` in `/cave/Wisdio-pstack` for a macOS verification skeleton, then prove its generated instructions on one feature. This is still pending; the user runs harness tests.
-2. Shorten skill descriptions so Claude keeps them (listing budget ~8,000 characters).
-3. Later: evals and audits to pick models per task (user's plan; not now).
+1. **Write the design-rationale docs (hand this to an agent; my attempt was reverted for voice).** Put a short, vivid section into `pstack/docs/guide/01-setup.md` explaining the setup's *why* in a poteto-punchy but tight style (tone model: "no shoes fit all, so we use symlinks — tune pstack until it fits your own demands"). Exactly three points, nothing else: (a) why skills are symlinks, not copies; (b) why the model pool is user-level at `~/.config/pstack/models.json`, not per-project; (c) how generated artifacts (e.g. a `verify-<app>` skill) drift and how to spot/clean them (`pstack_doctor.py` names them; fixes are `pstack_link.py --apply`, `/maintain-verification-skill`, or manual delete; version stamps not built). Facts: `pstack/skills/setup-pstack/references/model-routing.md` and the artifact table in `pstack/develop-log/2026-09-26T103230Z-progress.md`. Do not reuse wording from `4bc01a7`/`95ad4e2`.
+2. First real Wisdio task: run `/create-verification-skill` in `/cave/Wisdio-pstack` for a macOS verification skeleton, then prove its generated instructions on one feature. This is still pending; the user runs harness tests.
+3. Shorten skill descriptions so Claude keeps them (listing budget ~8,000 characters).
+4. Later: evals and audits to pick models per task (user's plan; not now).
 
 ## Safety
 

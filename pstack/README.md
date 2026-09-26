@@ -14,7 +14,7 @@ The skill workflows delegate through T3 Code's orchestration tools. Fork status,
 
 ## Install
 
-PStack runs inside T3 Code with Codex, Claude Code, or OpenCode. Skills are installed as symlinks from this checkout, so an edit to a skill is the edit everywhere. No shoe fits every foot: you tune PStack against your own work instead of installing a frozen copy. The [guide explains the shape](./docs/guide/01-setup.md#why-its-built-this-way).
+PStack runs inside T3 Code with Codex, Claude Code, or OpenCode. Skills are installed as symlinks from this checkout, so an edit to a skill is the edit everywhere.
 
 Link them into a project with the bundled script, run from this `pstack` directory (dry run without `--apply`; the other scripts below live beside it in `skills/setup-pstack/scripts/`):
 
