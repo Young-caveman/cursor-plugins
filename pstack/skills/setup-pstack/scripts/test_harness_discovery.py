@@ -2,6 +2,7 @@
 """Tests for the harness discovery check. Standard library only."""
 
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -44,7 +45,7 @@ class DiscoveryTest(unittest.TestCase):
         (day / "rollout-1.jsonl").write_text("\n".join(lines) + "\n")
 
     def claude_session(self, names, described):
-        folder = self.claude / str(self.project).replace("/", "-")
+        folder = self.claude / re.sub(r"[^A-Za-z0-9]", "-", str(self.project))
         folder.mkdir(parents=True)
         content = "\n".join(f"- {n}: text" if n in described else f"- {n}" for n in names)
         attachment = {"type": "skill_listing", "names": names, "content": content}

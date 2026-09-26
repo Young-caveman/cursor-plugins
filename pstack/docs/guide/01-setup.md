@@ -2,6 +2,26 @@
 
 This page covers linking PStack into a project, choosing a shared model pool, and running a first task. PStack runs inside T3 Code with Codex, Claude Code, or OpenCode.
 
+## Why the setup looks like this
+
+PStack isn't finished when you install it. You keep bending it until it fits how you work. Three decisions follow from that.
+
+**Skills are symlinks.** Every project points back at one PStack checkout. Change a skill there and the next session in every linked project runs the new text. There's nothing to reinstall and no stale copy hiding in some repo. The catch: a link is untracked, so it shows up on every branch of that checkout. To try a PStack change in isolation, use a separate worktree; a branch won't isolate it.
+
+**The model pool is yours, not the project's.** `~/.config/pstack/models.json` records which models your T3 Code can run and which ones you're willing to pay for. Those are facts about you, and they don't change from repo to repo. One file means one setup covers Codex, Claude Code, and OpenCode everywhere, and no model choice ever lands in a project's git history. Per-project pools would each need re-checking whenever a provider renames a model or you move one to the `escalation` tier.
+
+**Anything a skill writes will drift.** Links follow the source; files don't. The main one is the `verify-<app>` skill from `/create-verification-skill`. It's committed to the project and describes the app as it was on the day it was generated. Older PStack versions also left lock files, `AGENTS.md` pointers, and `.cursor/skills` output behind. Run `pstack_doctor.py` to name them, then fix by case:
+
+| What drifted | Doctor finding | Fix |
+|---|---|---|
+| Links missing, dangling, pointing into another checkout, or shadowed by a real copy | `unlinked-skill`, `dangling-link`, `foreign-source`, `shadowing-copy` | `pstack_link.py --apply` (re-link from the right checkout for `foreign-source`; inspect a copy before replacing it) |
+| Links showing as untracked files | `unignored-links` | `pstack_link.py --apply` |
+| `skills-lock.json` pinning PStack hashes, or an instruction line pointing at a removed skill | `lock-pins-live-source`, `dangling-reference` | Delete the entry or line by hand |
+| A verification skill still under `.cursor/skills` | `cursor-era-skill` | Move it to `.agents/skills` and link it into `.claude/skills` |
+| `verify-<app>`'s feature map no longer matches the app | none; the doctor can't see app behavior | [`/maintain-verification-skill`](../../skills/maintain-verification-skill/SKILL.md) |
+
+The generator stamps its output with `metadata.pstack-generated-by: create-verification-skill@1`. The doctor doesn't compare that stamp yet, so it can't tell you a verification skill predates the current generator. You'll have to check that yourself.
+
 ## Link the skills into your project
 
 Skills are symlinks to this checkout, so a text edit to a skill is live. From the `pstack` directory, preview and then apply:
