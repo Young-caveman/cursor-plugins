@@ -50,7 +50,7 @@ python3 scripts/model_policy.py resolve --id <entry-id> --snapshot <capabilities
 
 ## 4. Use the pool when delegating
 
-`resolve` is the dry run for choosing and checking targets. Pick one pool entry for a call, or several when a task benefits from different strengths; temporary mixtures for comparison are allowed. A target outside the saved pool needs the user's explicit authorization for the current task; the current instruction counts, so do not ask twice. `--authorize-explicit` carries that actual instruction as evidence, keeps the target one-off, and does not add it to the policy; the helper cannot verify consent, so never invent an instruction or treat the flag as a permission check. Nested subagents inherit the same authorization scope. When a workflow requires a specific agent type or prompt, preserve it and supply the pool target through the invocation parameters.
+`resolve` is the dry run for choosing and checking targets. Pick one pool entry for a call, or several when a task benefits from different strengths; temporary mixtures for comparison are allowed. A target outside the saved pool needs the user's explicit authorization for the current task; the current instruction counts, so do not ask twice. `--authorize-explicit` carries that actual instruction as evidence, keeps the target one-off, and does not add it to the policy; the helper cannot verify consent, so never invent an instruction or treat the flag as a permission check. Nested subagents inherit the same authorization scope. When a workflow requires a specific prompt or T3 role, preserve it and supply the pool target through the invocation parameters.
 
 ## 5. Report
 

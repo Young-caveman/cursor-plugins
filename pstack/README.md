@@ -14,34 +14,37 @@ fork it. improve it. make it yours. PRs are welcome!
 
 ## install
 
-```bash
-npx skills add ./skills --global --agent codex --agent opencode
-```
+pstack runs inside T3 Code with Codex, Claude Code, or OpenCode. skills are installed as symlinks from this checkout, so an edit to a skill is the edit everywhere.
 
-Run this from the `pstack` directory in a local checkout. The [Vercel Skills CLI](https://github.com/vercel-labs/skills) installs into the selected harness's skill location. Choose symlink when prompted to keep this checkout as the single source of truth; use `--copy` for a snapshot. To install for only one harness, pass only `--agent codex` or `--agent opencode`. For the Cursor plugin install flow, use Cursor's `/add-plugin pstack` command.
-
-To test a worktree without changing your global installation, run this from the repository root while that worktree is checked out:
+link them into a project with the bundled script, run from this `pstack` directory (dry run without `--apply`; the other scripts below live beside it in `skills/setup-pstack/scripts/`):
 
 ```bash
-npx skills add ./pstack/skills --agent codex --agent opencode
+python3 skills/setup-pstack/scripts/pstack_link.py --project /path/to/repo \
+  --harness codex --harness opencode --harness claude --apply
 ```
 
-Choose symlink for this project-scoped install so it uses the worktree as the source of truth under `.agents/skills/`. Do not add `--global` for a worktree test. The first command above is the personal install available across projects.
+- codex reads `.agents/skills`. claude code reads only `.claude/skills`, not `.agents/`. opencode reads both and de-duplicates by name. pass only the `--harness` flags you use.
+- the links stay out of git through a managed block in the repo's `.git/info/exclude`. pstack adds no lock file, no `.gitignore` entry, and no line in your project's `AGENTS.md`.
+- rerun the command after you add, rename, or remove a skill. text edits need no relinking: claude code and codex see them live; opencode caches skills, so start a new session.
+- `pstack_doctor.py --project /path/to/repo` reports drift between the source and a project. `harness_discovery.py --project /path/to/repo` shows which skills codex and claude code actually offered their model in the newest session there.
+- `pstack_link.py` handles project installs. Global installation is not covered by this script.
 
 ## get started
 
 two steps:
 
-1. run [`setup-pstack`](./skills/setup-pstack/SKILL.md) in your T3 Code session and choose the models that go in one shared pool, with the reasoning option you confirm for each.
-2. invoke [`poteto-mode`](./skills/poteto-mode/SKILL.md) with your harness's skill selector whenever you're doing anything that requires rigor. In Codex, use `$poteto-mode`; in OpenCode, ask the agent to use the `poteto-mode` skill.
+1. run [`setup-pstack`](./skills/setup-pstack/SKILL.md) in a T3 Code thread and choose the models that go in one shared pool, with the reasoning option you confirm for each. one setup covers every harness.
+2. invoke [`poteto-mode`](./skills/poteto-mode/SKILL.md) whenever you're doing anything that requires rigor. in claude code, type `/poteto-mode`; in codex, `$poteto-mode`; in opencode, ask the agent to use the `poteto-mode` skill.
 
-> **delegation.** every workflow that spawns agents goes through T3 per [`t3-delegation.md`](./skills/setup-pstack/references/t3-delegation.md): cheap `default`-tier pool entries normally, `escalation` entries only for hard work.
+> **delegation.** every workflow that spawns agents uses T3's `orchestrator_capabilities` and the tools in [`t3-delegation.md`](./skills/setup-pstack/references/t3-delegation.md): cheap `default`-tier pool entries normally, `escalation` entries only for hard work. `delegate_task` children share the parent's checkout; parallel writers get their own worktree through `t3_thread_launch`.
 
-Skill names shown with a leading slash below are shorthand for the harness's skill selector; they are not all literal slash commands.
+> **invocation.** the principles, `unslop`, `typescript-best-practices`, and `setup-pstack` may trigger on their own. the twenty-one workflow skills carry `disable-model-invocation: true`, which only claude code honours: there they run only when you type `/name`. codex and opencode ignore that field.
+
+skill names shown with a leading slash below are shorthand for the harness's skill selector; they are not all literal slash commands.
 
 new here? the [pstack guide](./docs/guide/README.md) walks you through a first real task, from setup and prompting through verification and overnight runs.
 
-that's it. the other skills are situational; the mode skill uses them for you as needed. setup discovers the models your T3 Code thread can delegate to and saves them in one user-owned pool.
+that's it. the other skills are situational; the mode skill uses them for you as needed. setup discovers the models your T3 Code thread can delegate to and saves them in one user-owned pool at `~/.config/pstack/models.json`.
 
 ## usage
 
@@ -94,7 +97,7 @@ Use poteto-mode: I'm going to bed. Land the stack even if CI flakes. I want ever
 
 when invoked it:
 
-1. matches your task to a [playbook](./skills/poteto-mode/playbooks/) and opens a todo list whose first items are its steps, copied in verbatim.
+1. matches your task to a [playbook](./skills/poteto-mode/playbooks/) and opens a todo list whose first items are its steps, copied in verbatim. it refuses to start until `setup-pstack` has saved a valid pool.
 2. routes to the other skills as the steps fire.
 3. writes unslopped replies framed for the consumer and the maintainer.
 
@@ -102,7 +105,7 @@ the full rules and playbooks live in [`skills/poteto-mode/SKILL.md`](./skills/po
 
 [`/poteto-mode`](./skills/poteto-mode/SKILL.md) is also a sticky mode: once entered it stays on across turns, applying itself when a playbook matches or the task needs rigor and staying out of the way otherwise. opt out any time by saying so.
 
-[`/poteto-mode`](./skills/poteto-mode/SKILL.md) works extremely well with cursor's `/loop` command. you can make cursor work for many hours without sacrificing rigor.
+for long runs, the [autonomous run playbook](./skills/poteto-mode/playbooks/autonomous-run.md) wakes itself with T3's `schedule_task` or, in claude code, `/loop`. you can leave it working for many hours without sacrificing rigor.
 
 ## skills
 
@@ -129,18 +132,18 @@ the full rules and playbooks live in [`skills/poteto-mode/SKILL.md`](./skills/po
 | [`/architect`](./skills/architect/SKILL.md) | you're about to write code that crosses a function boundary and want the caller's usage, types, and module shape settled first. |
 | [`/arena`](./skills/arena/SKILL.md) | you want N parallel attempts at the same thing, then to grab the best parts of each. |
 | [`/swarm`](./skills/swarm/SKILL.md) | you want N parallel workers across different slices or races, then one aggregated report. |
-| [`/interrogate`](./skills/interrogate/SKILL.md) | you have a diff and want several configured reviewer profiles to try to break it, including a strict code-quality lens. |
+| [`/interrogate`](./skills/interrogate/SKILL.md) | you have a diff and want reviewers from different pool entries to try to break it, including a strict code-quality lens. |
 | [`/automate-me`](./skills/automate-me/SKILL.md) | you want your own `-mode` skill, drafted from how you've actually worked. |
 | [`/make-bot-ui`](./skills/make-bot-ui/SKILL.md) | you want a page or dashboard whose buttons wake a Grok Bot over a webhook, including the sender-key handoff and Tailscale. |
-| [`/setup-pstack`](./skills/setup-pstack/SKILL.md) | you want to configure PStack's shared model pool for T3 Code sessions. |
+| [`/setup-pstack`](./skills/setup-pstack/SKILL.md) | you want to configure PStack's shared model pool for T3 Code sessions (all harnesses). |
 | [`/reflect`](./skills/reflect/SKILL.md) | a long task landed and you want the recipe captured as a skill edit. |
 | [`/teach`](./skills/teach/SKILL.md) | you want to actually understand a change or subsystem, not just have it summarized. runs how + why and weaves one plain explanation, built up diagram by diagram. |
 | [`/tdd`](./skills/tdd/SKILL.md) | you're fixing a bug and there's a cheap local test path. write the failing test first, then the fix. |
-| [`/no-comments`](./skills/no-comments/SKILL.md) | strip comments before review; spawns Comment Sicko, fixes accepted findings, offers encodings for claimed constraints. |
+| [`/no-comments`](./skills/no-comments/SKILL.md) | strip comments before review; delegates to Comment Sicko, fixes accepted findings, offers encodings for claimed constraints. |
 | [`/typescript-best-practices`](./skills/typescript-best-practices/SKILL.md) | you're reading or editing typescript. grounds the type-system-discipline principle in syntax. |
 | [`/figure-it-out`](./skills/figure-it-out/SKILL.md) | no bundled playbook fits. designs a rigorous, auditable playbook for the task. |
 | [`/show-me-your-work`](./skills/show-me-your-work/SKILL.md) | you want a reviewable decision trail. logs decisions to a tsv you can commit. |
-| [`/create-verification-skill`](./skills/create-verification-skill/SKILL.md) | your project has no scripted way to prove app behavior. generates a project-local verify skill with a feature map, for any language or platform. |
+| [`/create-verification-skill`](./skills/create-verification-skill/SKILL.md) | your project has no scripted way to prove app behavior. generates a project-local `verify-<app>` skill in `.agents/skills/` (linked into `.claude/skills/`) with a feature map, for any language or platform. |
 | [`/maintain-verification-skill`](./skills/maintain-verification-skill/SKILL.md) | your verify skill's feature map has drifted from the app. source wave + one live pass, at most one PR of proven corrections. |
 | [`/unslop`](./skills/unslop/SKILL.md) | you're cleaning up writing. removes AI tells. |
 | [`/bro`](./skills/bro/SKILL.md) | you want the last message restated in plain human language, no jargon. |
@@ -236,31 +239,27 @@ twenty-three short skills, one principle each. `poteto-mode` indexes them inline
 
 ## not shipped here
 
-a few things `poteto-mode` references but doesn't bundle:
+a few things other setups bundle that pstack doesn't:
 
-- `/deslop` and the `deslop` skill ship in the `cursor-team-kit` plugin.
-- `control-cli` (for CLIs and TUIs) and `control-ui` (for browser, Electron, web) ship in `cursor-team-kit` too.
-- `/create-skill` is a cursor built-in. cursor also ships a built-in `/babysit`; inside `poteto-mode`, the [babysit playbook](./skills/poteto-mode/playbooks/babysit.md) supersedes it for pr-status requests.
-
-install `cursor-team-kit` alongside pstack if you want the full set.
+- code slop pass: use claude code's `simplify` skill, or review the diff yourself for dead defensive code, needless abstraction, and duplicated logic.
+- driving an app: [`/create-verification-skill`](./skills/create-verification-skill/SKILL.md) writes a project-local verify skill.
+- writing a skill: use the harness's `skill-creator` skill.
 
 ## why are there no planning skills?
 
-cursor already has a great plan mode which works great with pstack. but personally, i don't believe in planning. the best spec is code. if you do want to make a plan, [`/poteto-mode`](./skills/poteto-mode/SKILL.md) covers it, but it's not a default. 
+the harnesses offer plan modes, but their read-only enforcement and MCP access under T3 have not been verified for every provider. if you want a plan, [`/poteto-mode`](./skills/poteto-mode/SKILL.md) covers it without requiring plan mode.
 
 ## make it yours
 
 `poteto-mode` is my style. you may not want exactly that.
 
-type [`/automate-me`](./skills/automate-me/SKILL.md). it mines your recent transcripts, drafts a `<your-name>-mode` skill from how you've actually worked, and routes through pstack underneath. you keep pstack as the base and end up with your own routing skill alongside `poteto-mode`.
+type [`/automate-me`](./skills/automate-me/SKILL.md). it mines your recent T3 threads (falling back to harness logs), drafts a `<your-name>-mode` skill from how you've actually worked, and routes through pstack underneath. you keep pstack as the base and end up with your own routing skill alongside `poteto-mode`.
 
-models are configurable too. use [`setup-pstack`](./skills/setup-pstack/SKILL.md). it keeps one user-owned pool at `~/.config/pstack/models.json`, discovered from what your T3 Code thread can actually run. role-based workflows are not migrated to it yet (see the model setup transition note above); the pool contract is that a task may mix entries when different strengths help, a model outside it needs your explicit go-ahead, and setup never upgrades a saved choice on its own.
+models are configurable too. use [`setup-pstack`](./skills/setup-pstack/SKILL.md). it keeps one user-owned pool at `~/.config/pstack/models.json` (optionally tiered `default` or `escalation`), discovered from what your T3 Code thread can actually run. every workflow that spawns agents draws from it; the pool contract is that a task may mix entries when different strengths help, a model outside it needs your explicit go-ahead, and setup never upgrades a saved choice on its own.
 
 ## automations
 
-pstack also ships a dormant [benny automation pack](./automations/benny/). benny triages slack issue reports, then reproduces and fixes confirmed bugs with real ui evidence. its files are not registered as slash skills.
-
-to set it up, point cursor at [`FOR_AGENTS.md`](./automations/benny/FOR_AGENTS.md). setup copies the pack into the target repository at `.cursor/automations/benny/`, enables pstack there for shared skills, and keeps user configuration outside the copied pack.
+pstack also ships a dormant [benny automation pack](./automations/benny/), written for Cursor automations and not adapted to T3 Code. treat it as untested here.
 
 ## license
 

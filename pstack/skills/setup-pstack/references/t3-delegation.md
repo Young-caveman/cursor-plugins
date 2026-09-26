@@ -30,7 +30,7 @@ A child receives only its task prompt and optional `role` (`implementation`, `re
 
 ## Agent instructions
 
-T3 has no agent types. When a workflow names an agent (for example `poteto-agent` or `Comment Sicko`), read its file in `pstack/agents/` and paste its instructions at the top of the brief.
+T3 has no agent types. When a workflow names a reviewer persona, read its instructions from that workflow's skill tree (for example `no-comments/references/comment-sicko.md`) and paste them into the brief.
 
 ## Modes
 

@@ -619,8 +619,7 @@ def main(argv=None):
         require(
             args.harness is None,
             "--harness belonged to the version 1 per-harness role policy and is not "
-            "part of the v2 shared pool; role-based skills are not migrated by this "
-            "revision (see references/model-routing.md).",
+            "part of the v2 shared pool (see references/model-routing.md).",
         )
         snapshot = load_snapshot(args.snapshot) if args.snapshot else None
         if args.command == "list":

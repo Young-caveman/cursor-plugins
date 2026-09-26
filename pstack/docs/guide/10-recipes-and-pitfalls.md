@@ -81,11 +81,11 @@ That's the whole prompt. [`/bro`](../../skills/bro/SKILL.md) restates the last m
 ## The pitfalls
 
 - **Enumerating skills in the prompt.** "use /how then /architect then /arena" reorders steps the playbook already sequences. State the goal and constraints. Name a skill only to override a default.
-- **A vague finish condition.** "make it better" gives `/loop` nothing to check. Give a command or artifact that can pass or fail.
-- **Parallel agents in one worktree.** They overwrite each other and the diff becomes archaeology. Say "own worktree per attempt" and the isolation is free.
+- **A vague finish condition.** "make it better" gives the run nothing to check. Give a command or artifact that can pass or fail.
+- **Parallel writers in one worktree.** `delegate_task` children share the parent's checkout, so they overwrite each other and the diff becomes archaeology. Say "own worktree per attempt" and the writers go through `t3_thread_launch`.
 - **Using `/arena` for coverage.** `/arena` repeats one design or code brief, then picks a base and grafts the best parts. `/swarm` partitions slices or declared race arms and aggregates one report.
 - **Accepting every review comment.** Bots and humans both file real catches and noise in one list. `/interrogate` sorts findings into act-on and dismissed buckets with reasons, and you can override either way.
-- **Treating `inherit-parent` as a model ID.** It is an intent that the active harness should use the parent session's model and reasoning. Setup offers it only when the current invocation path can honor that behavior; omission alone may resolve through harness defaults.
+- **Assuming a model or effort is available everywhere.** Options like `reasoningEffort`, `variant`, and `effort` differ per provider, and a target outside `~/.config/pstack/models.json` needs your explicit go-ahead. If a level looks wrong, check what actually ran (`pstack/tools/audit-rollout.py` for Codex and OpenCode sessions).
 - **Reporting success off a green build.** A build proves it compiles. Ask for the real command, flow, stored value, or profile, and expect the evidence in the reply.
 - **Writing a `SKILL.md` freehand.** Route it through the [Authoring or modifying a skill playbook](../../skills/poteto-mode/playbooks/authoring-a-skill.md) so validation and review happen.
 

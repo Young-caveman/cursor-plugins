@@ -71,7 +71,7 @@ If you run several agents against one repository, they will fight over the worki
 /poteto-mode new task. branch off <base> in a fresh worktree, then port the parser change there.
 ```
 
-Each task in its own branch and worktree means no agent stomps another's files. The [Opening a PR playbook](../../skills/poteto-mode/playbooks/opening-a-pr.md) already works from a worktree for code changes, so mostly you only say this when a specific base or location matters.
+Each task in its own branch and worktree means no agent stomps another's files. Under T3, agents launched with `delegate_task` share the parent's checkout, so parallel writers get their own worktree through `t3_thread_launch` instead ([delegation rules](../../skills/setup-pstack/references/t3-delegation.md)). The [Opening a PR playbook](../../skills/poteto-mode/playbooks/opening-a-pr.md) already works from a worktree for code changes, so mostly you only say this when a specific base or location matters.
 
 Worktrees accumulate. When disk gets tight, ask:
 

@@ -25,13 +25,13 @@ Each explorer gets the prompt in `references/explorer-prompt.md` with its angle 
 
 ## Step 2b. Direct Explain (simple questions)
 
-Delegate one child that explores and explains in one pass. Each is a read-only `delegate_task` child per [T3 delegation](../setup-pstack/references/t3-delegation.md): `role: "research"`, `interactionMode: "plan"`, a `default`-tier pool entry, and "do not edit files" in the brief.
+Delegate one child that explores and explains in one pass. It is a read-only `delegate_task` child per [T3 delegation](../setup-pstack/references/t3-delegation.md): `role: "research"`, `interactionMode: "plan"`, a `default`-tier pool entry, and "do not edit files" in the brief.
 
 Build its prompt from `references/explainer-prompt.md` without the explorer-findings section. Go to Step 4.
 
 ## Step 3. Synthesize (complex questions only)
 
-Once all explorers have returned, delegate one child to synthesize their findings into one explanation. Each is a read-only `delegate_task` child per [T3 delegation](../setup-pstack/references/t3-delegation.md): `role: "research"`, `interactionMode: "plan"`, a `default`-tier pool entry, and "do not edit files" in the brief.
+Once all explorers have returned, delegate one child to synthesize their findings into one explanation. It is a read-only `delegate_task` child per [T3 delegation](../setup-pstack/references/t3-delegation.md): `role: "research"`, `interactionMode: "plan"`, a `default`-tier pool entry, and "do not edit files" in the brief.
 
 Build its prompt from `references/explainer-prompt.md` with every explorer's findings filled in.
 

@@ -1,6 +1,6 @@
 # Make it yours
 
-poteto-mode is one person's style. The machinery underneath, playbooks, routing, model roles, works just as well wearing yours. This page covers generating a personal mode, capturing lessons from a session, authoring a focused skill, and testing a skill change before you trust it.
+poteto-mode is one person's style. The machinery underneath, playbooks, routing, the model pool, works just as well wearing yours. This page covers generating a personal mode, capturing lessons from a session, authoring a focused skill, and testing a skill change before you trust it.
 
 ## Generate your own mode with `/automate-me`
 
@@ -8,7 +8,7 @@ poteto-mode is one person's style. The machinery underneath, playbooks, routing,
 /automate-me
 ```
 
-You don't describe your style, because [`/automate-me`](../../skills/automate-me/SKILL.md) reads it out of your history. It mines your recent transcripts in the active workspace for repeated preferences, in how you like replies, delegation, verification, code, prose, and process, then asks you which patterns are really you. It drafts `.cursor/skills/<your-name>-mode/SKILL.md` through Cursor's built-in `create-skill` flow, runs the draft through [`/unslop`](../../skills/unslop/SKILL.md), and opens a PR from a worktree so you review it like any other change.
+You don't describe your style, because [`/automate-me`](../../skills/automate-me/SKILL.md) reads it out of your history. It mines this project's recent conversations (T3 threads first, then harness logs) for repeated preferences, in how you like replies, delegation, verification, code, prose, and process, then asks you which patterns are really you. It drafts `<your-name>-mode/SKILL.md` through the harness's `skill-creator` skill, in the PStack source (so it follows you across projects; relink with `pstack_link.py`) or in the project's `.agents/skills/`, runs the draft through [`/unslop`](../../skills/unslop/SKILL.md), and opens a PR from a worktree so you review it like any other change.
 
 Run it again whenever your habits drift:
 
@@ -26,7 +26,7 @@ Right after a task that taught you something, run:
 /reflect that took way too long. capture what we learned so the next run doesn't repeat it.
 ```
 
-[`/reflect`](../../skills/reflect/SKILL.md) sends the transcript to three parallel reviewers, then a synthesizer sorts the proposals into `Accepted`, `Rejected`, and `Backlog` and waits for your approval before any skill changes. Approve a proposal only if it would change a future decision. One weird session is an anecdote, not a rule.
+[`/reflect`](../../skills/reflect/SKILL.md) reads the conversation from its T3 thread and sends it to three parallel reviewers (one per lens, on different providers where the pool allows), then a synthesizer sorts the proposals into `Accepted`, `Rejected`, and `Backlog` and waits for your approval before any skill changes. Approve a proposal only if it would change a future decision. One weird session is an anecdote, not a rule.
 
 ## Author a focused skill
 
@@ -36,7 +36,7 @@ When you already know the workflow you want to capture:
 /poteto-mode write a skill for verifying database migrations in this repo
 ```
 
-Writing a skill matches the [Authoring or modifying a skill playbook](../../skills/poteto-mode/playbooks/authoring-a-skill.md), which routes through Cursor's built-in `create-skill`, validates the frontmatter and links, and ships the result through the Opening a PR playbook. Agent-facing prose has a higher bar than human prose, because an unhelpful sentence becomes an instruction some future agent follows. Let the playbook hold that bar rather than writing a `SKILL.md` freehand.
+Writing a skill matches the [Authoring or modifying a skill playbook](../../skills/poteto-mode/playbooks/authoring-a-skill.md), which routes through the harness's `skill-creator` skill, validates the frontmatter and links, and ships the result through the Opening a PR playbook. Agent-facing prose has a higher bar than human prose, because an unhelpful sentence becomes an instruction some future agent follows. Let the playbook hold that bar rather than writing a `SKILL.md` freehand.
 
 One special case has its own generator. A skill that must drive your app and prove behavior is a verification skill, so use [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md) and [`/maintain-verification-skill`](../../skills/maintain-verification-skill/SKILL.md) instead. [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) covers both.
 

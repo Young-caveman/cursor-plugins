@@ -24,11 +24,11 @@ By default it proceeds straight from the synthesized design into implementation.
 /arena take my prompt to the arena verbatim. i want to compare their proposals with yours.
 ```
 
-[`/arena`](../../skills/arena/SKILL.md) is the general tool underneath. N subagents attempt the same design or code brief in parallel, each writing to its own worktree or directory. A read-only judge uses a profile from the configured cross-judge pool and prefers a different model family when the pool allows one. The coordinator reads each candidate end to end, picks a base, grafts in the best ideas from the losers, and verifies the result.
+[`/arena`](../../skills/arena/SKILL.md) is the general tool underneath. N delegated agents attempt the same design or code brief in parallel. A code candidate gets its own worktree through `t3_thread_launch`; a document-only candidate can be a `delegate_task` child writing to a temp directory. A read-only judge is a pool entry from a different provider than the parent's when the pool has one. The coordinator reads each candidate end to end, picks a base, grafts in the best ideas from the losers, and verifies the result.
 
 ```mermaid
 flowchart LR
-    A[One task] --> B[Configured panel]
+    A[One task] --> B[Pool entries]
     B --> C[Candidate 1]
     B --> D[Candidate 2]
     B --> E[Candidate N]
@@ -40,7 +40,7 @@ flowchart LR
     H --> I[Verify]
 ```
 
-The panel comes from your [`/setup-pstack`](../../skills/setup-pstack/SKILL.md) configuration, and you can adjust it per task. Ask for more candidates when the decision matters, fewer when it doesn't:
+The runners come from your model pool ([`/setup-pstack`](../../skills/setup-pstack/SKILL.md)): `default`-tier entries unless the task is genuinely hard. Since arena produces one result, it prefers a few strong entries over many weak ones. Ask for more candidates when the decision matters, fewer when it doesn't:
 
 ```text
 /arena this, 5 candidates. the cache key format is expensive to change later.
@@ -62,7 +62,7 @@ Reach for it when parallelism buys coverage or lets independent checks race. `/a
 /interrogate the whole branch, but skeptically. no nitpicks unless it's an actual bug or regression.
 ```
 
-[`/interrogate`](../../skills/interrogate/SKILL.md) sends the same diff, intent, and rubric to each configured reviewer profile. Model diversity is useful when those profiles resolve to different models or families; if several resolve alike, treat agreement accordingly. The lead sorts everything into `Act on`, `Consider`, `Noted`, and `Dismissed`, with a reason for each dismissal, and applies nothing automatically.
+[`/interrogate`](../../skills/interrogate/SKILL.md) sends the same diff, intent, and rubric to one read-only reviewer per chosen pool entry, by default one `default`-tier entry from each provider in the pool. Model diversity is what makes it useful; it says which reviewers share a provider or model, and you should weigh their agreement accordingly. The lead sorts everything into `Act on`, `Consider`, `Noted`, and `Dismissed`, with a reason for each dismissal, and applies nothing automatically.
 
 Read the dismissals too. The lead is a pragmatic senior engineer, not an oracle, and you can override it.
 

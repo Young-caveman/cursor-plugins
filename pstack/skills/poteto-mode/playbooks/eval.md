@@ -18,7 +18,7 @@
 2. **Set up sanitized environments.** Per-candidate working dir with the variant in place. Plant any context an organic task would have: a project skeleton, the skills the candidate would naturally read.
 3. **Author one organic prompt.** What a user would type. No leakage of what's being measured.
 4. **Spawn N parallel candidates** on pool entries chosen per [T3 delegation](../../setup-pstack/references/t3-delegation.md). Each works in its own sanitized dir or worktree. Same prompt to each.
-5. **Spawn one blinded judge** using the configured `arena cross-judge pool`. Prefer a different model family only among configured choices; if none qualifies, report that limitation. The judge sees outputs by sanitized label and the rubric, never a model name.
+5. **Spawn one blinded judge** on a pool entry per [T3 delegation](../../setup-pstack/references/t3-delegation.md), preferably from a different provider than the candidates; if none qualifies, report that limitation. The judge sees outputs by sanitized label and the rubric, never a model name.
 6. **Verify the chain from transcripts, not self-report.** Read each candidate's conversation per [reading past conversations](../../setup-pstack/references/transcripts.md) (its T3 thread's `activity` view, or its harness session). Never read another project's history. Look at which files each candidate actually opened. Grade chain-following from the files it really read plus the shape of the code, never from the candidate's own claims.
 7. **Read every candidate output yourself** end to end. Compare to the judge's verdict. Disagreement means a model is biased or the rubric is ambiguous. Synthesize.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Read-only worktree prune audit. Classifies every git worktree by size, merge
-# state, uncommitted work, remote/PR state, and the most recent chat that
-# operated in it. Emits a table sorted by size with a suggested bucket. Never
+# state, uncommitted work, remote/PR state, and the most recent harness session
+# whose cwd was the worktree. Emits a table sorted by size with a suggested bucket. Never
 # deletes anything; deletion stays a human-gated step in the playbook.
 #
 # Usage: worktree-audit.sh [repo-path]   (defaults to the current repo)
@@ -91,7 +91,6 @@ git worktree list --porcelain | awk '/^worktree /{print $2}' | while read -r wt;
 	case "$dirty" in wip:*) bucket=hold-wip ;; *)
 		case "$pr" in *OPEN*) bucket=hold-open-pr ;; *)
 			if [ "$recent" = yes ]; then bucket=verify-recent-chat
-			elif [ "$merged" = YES ] || [ "$pr" != "-" ]; then bucket=safe
 			else bucket=review; fi ;;
 		esac ;;
 	esac
