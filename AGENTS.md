@@ -6,8 +6,26 @@ Current state and rules for working on PStack as of 2026-09-26. History, researc
 
 Turn PStack (originally for Cursor) into the user's personal skill set for Codex, OpenCode, and Claude Code, all run under T3 Code. T3's `orchestrator_capabilities` (what can run) and `delegate_task` (run it) are the contract. OSes: macOS, Omarchy/Arch.
 
+## T3 target
+
+PStack targets the user's T3 Code fork, branch `yash/swiftui-orchestrator-v2-support` (remote `origin` `Young-caveman/t3code`; upstream is `pingdotgg/t3code`). The fork keeps release version `0.0.42` but replaces the orchestrator with V2, so the version number does not identify the code. Sources: `/cave/t3code` on Omarchy, `/Users/jimmy/coding/t3code` on the Mac. `docs/operations/custom-fork-host-setup.md` there records the revision each host was built from and the SSH bootstrap.
+
+Check T3 behavior against that checkout, not against memory, upstream `main`, or a tool description. Read:
+
+- `docs/orchestration-v2/orchestrator-mcp-server.md`, `apps/server/src/mcp/toolkits/*/tools.ts`, `packages/contracts/src/orchestratorMcp.ts`: the tools skills call.
+- `apps/server/src/provider/T3OrchestrationInstructions.ts`: what T3 tells every agent about delegation.
+- `docs/internals/remote.md`: environments.
+
+Verified from that source on 2026-09-27:
+
+- One T3 server is one environment. A project and its threads belong to one environment, and `remote.md` says repository identity "never routes work between" environments. The `t3-code` MCP endpoint is `127.0.0.1:<port>/mcp` on that server, with a token scoped to the environment, parent thread, and provider session. No orchestrator or thread tool takes an environment or machine argument (`orchestratorMcp.ts` has no such field).
+- So `delegate_task`, `t3_thread_launch`, and `create_threads` run only where the calling thread's server runs. From an Omarchy thread they cannot start work on the Mac, and PStack skills must not assume they can.
+- The Mac is reachable as its own environment (SSH from the desktop app). Work for it goes through a thread the user opens there, or through a project's own out-of-band handoff (Wisdio's `t3-thread-handoff` skill tunnels to the Mac server and sends to an existing thread; it needs the user's explicit request and gives no completion notice).
+- Not yet tested against the live Mac: opening a Mac thread while the Omarchy app is the client, and whether `t3_thread_list` or `t3_project_list` ever show Mac state. Treat "unreachable from here" as the working assumption until a run shows otherwise.
+
 ## Rules
 
+- A surface that only a different machine can drive is `verified-unreachable` from this one, stated as such in the generated verification skill. Never claim it was verified, and never fake a delegation to it.
 - Models live in one v2 pool, `~/.config/pstack/models.json`: `providerInstanceId` + model + confirmed options + optional `tier`. Anything outside the pool needs the user's explicit authorization.
 - Cost: the pool holds only cheap `default`-tier entries (Luna max, DeepSeek, MiMo, Sonnet 5). The user removed Opus 5.5 on 2026-09-27, so there is no `escalation` entry; a harder model needs the user's explicit authorization per task.
 - Never silently substitute a model or raise reasoning effort. Effort levels don't carry across models.
@@ -24,6 +42,7 @@ Turn PStack (originally for Cursor) into the user's personal skill set for Codex
 | Path | Purpose |
 |---|---|
 | this worktree (`t3-orchestration`) | PStack source; edit skills here |
+| `/cave/t3code` (`yash/swiftui-orchestrator-v2-support`) | T3 fork source; read-only reference for T3 behavior, never edited from PStack work |
 | `/cave/Wisdio` (`develop1-engine`) | normal Wisdio work; no PStack |
 | `/cave/Wisdio-pstack` (`pstack-test`) | **test bench only** — Wisdio + PStack links in `.agents/skills` (Codex, OpenCode) and `.claude/skills` (Claude Code). Wisdio here is just the app under test; PStack stays project-agnostic and never mentions Wisdio in its own docs or skills. |
 
