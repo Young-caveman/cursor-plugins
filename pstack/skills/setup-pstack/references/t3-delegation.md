@@ -12,6 +12,14 @@ Every PStack workflow that spawns agents (`arena`, `swarm`, `interrogate`, `arch
 
 `delegate_task` children always share the parent's checkout, so parallel writers there overwrite each other. `t3_thread_launch` creates top-level threads in the same project, which `t3_thread_wait` and `t3_thread_read` can follow. It requires a full-access or default parent, and has no retry key: after an error, check `t3_thread_list` before launching again.
 
+## One machine only
+
+A T3 server is one environment, and its `t3-code` tools act only inside it. `delegate_task`, `t3_thread_launch`, and `create_threads` take no machine argument and always run where this thread's server runs. Another computer connected to the user's T3 app is a separate environment: no PStack workflow can start, read, or steer work there. When a step needs it (a check only that OS can run, a checkout that exists only there):
+
+1. Do everything that can run here, then write the remaining step as a standalone task file: goal, branch or commit to use, commands, and the evidence to bring back.
+2. Hand it off through the project's own handoff skill if it has one and the user asked for it, otherwise give the file to the user. Never send work to another environment on your own.
+3. Report that step as `not run: needs <machine>`. A step you couldn't run is not verified.
+
 ## Briefs
 
 A child receives only its task prompt and optional `role` (`implementation`, `research`, `review`, `design`, `test`, `general`). No conversation history is copied. Every brief stands alone: goal, scope, files or diff, how to verify, what to report, and any skill the child should read (by path). Paste required agent instructions into the brief; T3 has no agent types.
