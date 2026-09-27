@@ -160,7 +160,7 @@ def follow(path: Path, interval: float = 0.5, from_start: bool = False):
         while True:
             with path.open(encoding="utf-8", errors="replace") as f:
                 f.seek(pos)
-                for line in f:
+                while line := f.readline():
                     pos = f.tell()
                     try:
                         e = json.loads(line)

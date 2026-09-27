@@ -23,7 +23,7 @@ Inside a PStack workflow, these rules replace T3's general delegation advice:
 - `message`: the full brief. Without it the thread is created idle and never starts; `task` and `prompt` are not launch fields.
 - `modelSelection` (see Target), `workspaceStrategy`, and optionally `interactionMode`.
 
-Only a parent whose runtime mode is `full-access` **and** whose interaction mode is `default` may launch; check `runtimeMode` and `interactionMode` in `orchestrator_capabilities` first. Otherwise don't launch: tell the user, and run the writers one at a time through `delegate_task`. Launches have no retry key: after an error or lost response, check `t3_thread_list` before launching again. Follow a launched thread with `t3_thread_wait` and `t3_thread_read`; it does not wake the parent.
+Only a parent whose runtime mode is `full-access` **and** whose interaction mode is `default` may launch; check `runtimeMode` and `interactionMode` in `orchestrator_capabilities` first. Otherwise don't launch. In `plan` mode no child can write (children only narrow permissions), so tell the user to switch the thread to default mode, or keep the workflow read-only. With `default` interaction but a narrower runtime mode, tell the user and run the writers one at a time through `delegate_task`. Launches have no retry key: after an error or lost response, check `t3_thread_list` before launching again. Follow a launched thread with `t3_thread_wait` and `t3_thread_read`; it does not wake the parent.
 
 To move **this** thread into a fresh worktree (for example before opening a PR), use `t3_worktree_status`, then `t3_worktree_handoff` with `continuationPrompt` holding the remaining work, as the last call of the turn. `git worktree add` plus `cd` does not rebind the T3 thread.
 
@@ -76,7 +76,7 @@ T3 has no agent types. When a workflow names a reviewer persona, read its instru
 
 ## Scheduled runs
 
-`schedule_task` arms a recurring run (`schedule` is an object, never JSON text). Keep the returned `scheduledTaskId`. `update_scheduled_task` with `enabled: false` pauses it, `delete_scheduled_task` removes it, `list_scheduled_tasks` finds it again, and `run_scheduled_task_now` runs a tick immediately. A workflow that armed a schedule removes it when it ends.
+`schedule_task` arms a recurring run (`schedule` is an object, never JSON text). Keep the returned `scheduledTaskId`. `update_scheduled_task` with `enabled: false` pauses it, `delete_scheduled_task` removes it, `list_scheduled_tasks` finds it again, and `run_scheduled_task_now` runs a tick immediately; it takes the same id as `taskId`, while update and delete take `scheduledTaskId`. A workflow that armed a schedule removes it when it ends.
 
 ## Pull requests
 

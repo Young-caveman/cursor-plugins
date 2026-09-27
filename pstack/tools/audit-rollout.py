@@ -113,7 +113,7 @@ def follow_codex(path: Path, args):
         while True:
             with path.open() as f:
                 f.seek(pos)
-                for line in f:
+                while line := f.readline():
                     pos = f.tell()
                     line = line.strip()
                     if not line:

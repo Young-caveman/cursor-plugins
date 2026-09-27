@@ -23,7 +23,7 @@ REASONING_OPTION = {"codex": "reasoningEffort", "opencode": "variant", "pi": "th
 
 
 def pool_routes(policy: dict, harness: str) -> dict[str, tuple[str | None, str | None]]:
-    """Pool entries for this harness as (model, reasoning) pairs; None reasoning means provider default."""
+    """Pool entries for this harness as (model, reasoning) pairs; None reasoning means the provider default, which matches only a run that recorded no explicit value."""
     out = {}
     for entry in policy.get("pool") or []:
         if entry.get("providerInstanceId") != harness:
@@ -66,7 +66,7 @@ def routing_report(audit: SessionAudit, policy: dict | None) -> list[str]:
     seen = set()
     for r in audit.routing:
         actual = _actual_route(harness, r)
-        match = [p for p, (m, e) in models.items() if m == actual[0] and e in (None, actual[1])]
+        match = [p for p, (m, e) in models.items() if m == actual[0] and e == (None if actual[1] in (None, "default") else actual[1])]
         status = f"pool~{match[0]}" if match else "NOT IN POOL"
         key = (r.scope, actual, status)
         if key in seen:
