@@ -44,7 +44,7 @@ Two steps:
 
 > **Delegation.** Every workflow that spawns agents uses T3's `orchestrator_capabilities` and the tools in [`t3-delegation.md`](./skills/setup-pstack/references/t3-delegation.md): cheap `default`-tier pool entries normally, `escalation` entries only for hard work. `delegate_task` children share the parent's checkout; parallel writers get their own worktree through `t3_thread_launch`.
 
-> **Invocation.** The principles, `unslop`, `typescript-best-practices`, and `setup-pstack` may trigger on their own. The twenty-one workflow skills run only when you ask for them by name or a workflow you started routes to one. Claude Code and Pi enforce this through `disable-model-invocation: true`; Codex and OpenCode ignore that field, so each workflow's description states the rule for the model instead.
+> **Invocation.** The principles, `unslop`, `typescript-best-practices`, and `setup-pstack` may trigger on their own. The twenty workflow skills run only when you ask for them by name or a workflow you started routes to one. Claude Code and Pi enforce this through `disable-model-invocation: true`; Codex and OpenCode ignore that field, so each workflow's description states the rule for the model instead.
 
 Skill names shown with a leading slash below are shorthand for the harness's skill selector; they are not all literal slash commands.
 

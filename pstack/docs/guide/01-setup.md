@@ -36,7 +36,7 @@ PStack isn't finished when you install it. You keep bending it until it fits how
 
 ## How skills get invoked
 
-The principle skills, `unslop`, `typescript-best-practices`, and `setup-pstack` may trigger on their own. The 21 workflow skills run only when you ask for them by name, or when a workflow you started routes to one (`/poteto-mode` calling `/how`, for example). Claude Code and Pi enforce this through `disable-model-invocation: true`, so there a workflow starts only when you type its name. Codex and OpenCode ignore that field, so each workflow's description opens with the same rule as an instruction to the model. That is a request, not a lock: if a model starts a workflow you didn't ask for, stop it and report it. Start one by name: `/name` in Claude Code, `$name` in Codex, `/skill:name` in Pi, or ask the OpenCode agent to use the skill.
+The principle skills, `unslop`, `typescript-best-practices`, and `setup-pstack` may trigger on their own. The 20 workflow skills run only when you ask for them by name, or when a workflow you started routes to one (`/poteto-mode` calling `/how`, for example). Claude Code and Pi enforce this through `disable-model-invocation: true`, so there a workflow starts only when you type its name. Codex and OpenCode ignore that field, so each workflow's description opens with the same rule as an instruction to the model. That is a request, not a lock: if a model starts a workflow you didn't ask for, stop it and report it. Start one by name: `/name` in Claude Code, `$name` in Codex, `/skill:name` in Pi, or ask the OpenCode agent to use the skill.
 
 ## Pick your models
 
