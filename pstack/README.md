@@ -52,6 +52,22 @@ New here? The [pstack guide](./docs/guide/README.md) walks you through a first r
 
 That's it. The other skills are situational; the mode skill uses them for you as needed. Setup discovers the models your T3 Code thread can delegate to and saves them in one user-owned pool at `~/.config/pstack/models.json`.
 
+## What PStack uses from T3
+
+| T3 capability | Used for | Where |
+|---|---|---|
+| `orchestrator_capabilities` | which providers, models, and options can run; whether this thread may launch writers | `setup-pstack`, every delegating workflow |
+| `delegate_task`, `task_status`, `task_cancel` | read-only helpers (review, research, judging) and one-at-a-time writers, on pool models | `interrogate`, `why`, `reflect`, `architect`, playbooks |
+| `t3_thread_launch` with a worktree | parallel writers, each in its own branch and thread | `arena`, `swarm`, autopilot and multi-phase playbooks |
+| `t3_thread_wait`, `t3_thread_read`, `t3_thread_send`, `t3_thread_interrupt`, queue tools | follow, steer, and stop launched threads | `orchestrate`, autopilot, `pause-safely` |
+| `t3_pending_request_*` | answer a worker stuck on a question | `orchestrate`, autopilot |
+| `schedule_task` and its update/delete/run tools | recurring check-ins for long runs, removed when the run ends | long-running playbooks (autopilot, multi-phase, babysit, shipping) |
+| `t3_worktree_status`, `t3_worktree_handoff`, `link_pull_request` | move a thread into a fresh worktree; attach PRs to the thread | `opening-a-pr` |
+| `t3_thread_search`, `t3_thread_list` | find earlier work | `recall`, transcripts reference |
+| `preview_*`, `device_*` | drive and screenshot the app | `create-verification-skill` |
+
+Inside a PStack workflow, the agent uses T3's tools instead of its harness's own subagents, so every helper runs on a model from your pool. `t3_thread_fork`, `t3_thread_merge_back`, and `create_threads` are unused: briefs stand alone. All T3 work stays on the machine whose T3 server runs the thread.
+
 ## Usage
 
 Use [`poteto-mode`](./skills/poteto-mode/SKILL.md) at the start of a task. It reads your request, picks from a set of playbooks, and runs the other skills as the steps need them.
