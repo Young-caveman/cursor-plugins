@@ -59,7 +59,7 @@ Capture this as seed context (file paths, symbols, commits, PR numbers, linked t
 
 ### Discovery
 
-Before spawning investigators, list the MCP servers this harness has: the MCP tools in your own tool list first; otherwise its config (Claude Code: `claude mcp list`; Codex: `mcp_servers` in `~/.codex/config.toml` and the project's `.codex/config.toml`; OpenCode: `mcp` in `opencode.json`). Ignore `t3-code`; it is orchestration, not a source.
+Before spawning investigators, list the MCP servers this harness has: the MCP tools in your own tool list first; otherwise its config (Claude Code: `claude mcp list`; Codex: `mcp_servers` in `~/.codex/config.toml` and the project's `.codex/config.toml`; OpenCode: `mcp` in `opencode.json`; Pi has no MCP config, so only the tools in your list count). Ignore `t3-code`; it is orchestration, not a source.
 
 Map each available MCP to one evidence category:
 

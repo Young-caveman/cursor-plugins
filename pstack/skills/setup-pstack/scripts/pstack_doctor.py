@@ -158,7 +158,7 @@ def check_refs(project):
                 elif ref.startswith(".cursor/"):
                     found.append(finding(
                         "warn", "cursor-reference", where,
-                        f"points at {ref}; Codex, OpenCode, and Claude Code do not discover .cursor/skills",
+                        f"points at {ref}; Claude Code, Codex, OpenCode, and Pi do not discover .cursor/skills",
                     ))
     return found
 
@@ -172,7 +172,7 @@ def check_cursor_skills(project):
         return []
     return [finding(
         "warn", "cursor-era-skill", root,
-        f"{', '.join(names)}: generated for Cursor; no current harness discovers this directory",
+        f"{', '.join(names)}: generated for Cursor; Claude Code, Codex, OpenCode, and Pi do not discover this directory",
         "move each into .agents/skills (and link it into .claude/skills for Claude Code)",
     )]
 

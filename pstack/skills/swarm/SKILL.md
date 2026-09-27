@@ -18,7 +18,7 @@ Fan out N parallel workers through T3. They cover separate slices, race the same
 
 ## 2. Fan out
 
-Launch read-only `delegate_task` workers with `mode: "async"`, a stable `clientRequestId` (`swarm-<slug>-<n>`), and `interactionMode: "plan"`. Launch each writer with `t3_thread_launch` in its own worktree, passing the resolved entry as `modelSelection`; that tool has no `mode` or `clientRequestId`. After a lost launch response, inspect `t3_thread_list` before retrying. Then end the turn; follow launched threads with `t3_thread_wait` and `t3_thread_read`.
+Launch read-only `delegate_task` workers with `mode: "async"`, a stable `clientRequestId` (`swarm-<slug>-<n>`), and `interactionMode: "plan"`. Launch each writer with `t3_thread_launch` in its own worktree, passing the resolved entry as `modelSelection`; that tool has no `mode` or `clientRequestId`. Launch writers per [T3 delegation](../setup-pstack/references/t3-delegation.md#tool-for-the-job): `title`, the brief as `message`, `modelSelection`, and the worktree `workspaceStrategy`, from a `full-access`/`default` parent, after telling the user how many threads you are opening. Use T3's tools, not the harness's own subagent tool. After a lost launch response, inspect `t3_thread_list` before retrying. Then end the turn; follow launched threads with `t3_thread_wait` and `t3_thread_read`.
 
 Every brief stands alone, since a worker sees nothing but its brief: goal, scope, the exact slice or race arm, how to verify, and what to report. Reports start with `PASS`, `ISSUES`, or `BLOCKED` and cite evidence.
 

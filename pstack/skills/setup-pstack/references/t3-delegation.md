@@ -1,8 +1,11 @@
 # Delegating work under T3 orchestration v2
 
-Every PStack workflow that spawns agents (`arena`, `swarm`, `interrogate`, `architect`, `poteto-mode` playbooks) delegates through T3's `t3-code` MCP tools. Harness-native subagent tools, Cursor `Task` fields, and agent types are not used. Model choice follows [the pool contract](model-routing.md).
+Every PStack workflow that spawns agents (`arena`, `swarm`, `interrogate`, `architect`, `poteto-mode` playbooks) delegates through T3's `t3-code` MCP tools. Model choice follows [the pool contract](model-routing.md).
 
-Inside a PStack workflow, these rules replace T3's general delegation advice. Don't use native subagents even for same-provider work, because they bypass the pool's model and options. A workflow the user started that needs parallel writers counts as the user's request for new threads, so `t3_thread_launch` is allowed there.
+Inside a PStack workflow, these rules replace T3's general delegation advice:
+
+- Call `delegate_task` even when the harness has its own subagent tool (Claude Code's Task/Agent, Codex's, OpenCode's; Pi has none), and even for same-provider work. Native subagents bypass the pool's model and options.
+- T3 says to open top-level threads only on the user's explicit request. Before the first `t3_thread_launch` in a workflow, tell the user in one line how many worktree threads you will open and why. The user starting a workflow that runs parallel writers (`arena`, `swarm`, the autopilot and multi-phase playbooks) is that request; say it, don't wait for a second confirmation.
 
 ## Tool for the job
 
@@ -12,7 +15,17 @@ Inside a PStack workflow, these rules replace T3's general delegation advice. Do
 | One writer at a time | `delegate_task` | the parent's checkout |
 | Several writers in parallel (arena candidates, race arms that edit code) | `t3_thread_launch` with `workspaceStrategy: {type: "worktree", baseRef: <current branch>, branch: <new>, startFromOrigin: false}`, one per writer | its own new worktree |
 
-`delegate_task` children always share the parent's checkout, so parallel writers there overwrite each other. `t3_thread_launch` creates top-level threads in the same project, which `t3_thread_wait` and `t3_thread_read` can follow. It requires a full-access or default parent, and has no retry key: after an error, check `t3_thread_list` before launching again.
+`delegate_task` children always share the parent's checkout, so parallel writers there overwrite each other.
+
+`t3_thread_launch` creates a top-level thread in the same project. The call needs:
+
+- `title` (required).
+- `message`: the full brief. Without it the thread is created idle and never starts; `task` and `prompt` are not launch fields.
+- `modelSelection` (see Target), `workspaceStrategy`, and optionally `interactionMode`.
+
+Only a parent whose runtime mode is `full-access` **and** whose interaction mode is `default` may launch; check `runtimeMode` and `interactionMode` in `orchestrator_capabilities` first. Otherwise don't launch: tell the user, and run the writers one at a time through `delegate_task`. Launches have no retry key: after an error or lost response, check `t3_thread_list` before launching again. Follow a launched thread with `t3_thread_wait` and `t3_thread_read`; it does not wake the parent.
+
+To move **this** thread into a fresh worktree (for example before opening a PR), use `t3_worktree_status`, then `t3_worktree_handoff` with `continuationPrompt` holding the remaining work, as the last call of the turn. `git worktree add` plus `cd` does not rebind the T3 thread.
 
 ## One machine only
 
@@ -34,7 +47,7 @@ A child receives only its task prompt and optional `role` (`implementation`, `re
 
 ## Several models on one task
 
-- **Finding problems** (review, diagnosis, exploration): prefer entries from different providers. Differently trained models miss different things; the union of their findings is the value. Say when two arms share a model.
+- **Finding problems** (review, diagnosis, exploration): prefer entries whose models come from different vendors. Differently trained models miss different things; the union of their findings is the value. Pi and OpenCode can run the same `opencode-go/...` model, and that counts as one model, not two. Say when two arms share a model.
 - **Producing one result** (a fix, a design, an answer): one strong entry beats a mix. Mixing adds the weaker model's mistakes.
 - **Judging**: the judge checks evidence (a failing-then-passing reproduction, test output, a quoted line), not which answer sounds better. A judge that must weigh opinions needs a model at least as strong as the ones it judges.
 
@@ -44,7 +57,7 @@ T3 has no agent types. When a workflow names a reviewer persona, read its instru
 
 ## Modes
 
-- Children may only narrow the parent's permissions. For `delegate_task` reviewers and judges, pass `interactionMode: "plan"` and say "do not edit files" in the brief. Plan mode's enforcement differs by provider and has not been verified per provider. `t3_thread_launch` accepts `interactionMode` too, but launches that write code need `default` and a separate worktree.
+- Children may only narrow the parent's permissions. For `delegate_task` reviewers and judges, pass `interactionMode: "plan"` and say in the brief: "Do not edit files. Your deliverable is findings, not an implementation plan." The brief is the guard that holds everywhere: T3's Pi adapter ignores plan mode, and other providers' enforcement varies. `t3_thread_launch` accepts `interactionMode` too, but launches that write code need `default` and a separate worktree.
 - For `delegate_task`, pass a stable `clientRequestId` per child (for example `<workflow>-<slug>-<n>`) so a retried call returns the same child. `t3_thread_launch` has no retry key; after an error or lost response, inspect `t3_thread_list` before trying again.
 
 ## Waiting
@@ -54,6 +67,20 @@ T3 has no agent types. When a workflow names a reviewer persona, read its instru
 - Read results with `task_status` (delegated tasks) or `t3_thread_wait` + `t3_thread_read` (launched threads). A `wait` timeout does not cancel the child.
 - A child that failed before doing any work because its provider couldn't run (not logged in, provider unavailable, binary missing) gets one rerun: same brief, a new `clientRequestId`, and another `default` pool entry from a different provider. Report the swap and the original error. A provider that failed this way stays unused for the rest of the workflow.
 - Any other failure or timeout is a dropout: continue with N−1 and report it. Never rerun a child that did work and failed its task, and never go outside the pool.
+
+## Stopping and steering
+
+- Cancel a delegated child with `task_cancel` (its `taskId`). Interrupt a launched thread's running turn with `t3_thread_interrupt`. A stood-down or replaced worker is stopped this way, not just ignored.
+- Message a launched thread with `t3_thread_send`: `mode: "queue"` for a follow-up turn, `"steer"` to correct an active turn, `"restart"` to interrupt and restart it. `t3_queue_list`, `t3_queue_edit`, `t3_queue_cancel`, and `t3_queue_promote_to_steer` inspect and fix what is waiting.
+- A worker that looks stuck may be waiting on a question: check `t3_pending_request_list` on its thread and answer with `t3_pending_request_respond` when the answer is yours to give. Permission approvals stay with the user.
+
+## Scheduled runs
+
+`schedule_task` arms a recurring run (`schedule` is an object, never JSON text). Keep the returned `scheduledTaskId`. `update_scheduled_task` with `enabled: false` pauses it, `delete_scheduled_task` removes it, `list_scheduled_tasks` finds it again, and `run_scheduled_task_now` runs a tick immediately. A workflow that armed a schedule removes it when it ends.
+
+## Pull requests
+
+After opening a PR, call `link_pull_request` with its URL so T3 tracks it on the thread. For a stack, link every layer.
 
 ## Report
 

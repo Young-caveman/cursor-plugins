@@ -21,7 +21,7 @@ The N candidates will receive the same prompt, so the prompt is the contract.
 
 ## Phase B: Fan out
 
-Launch `delegate_task` candidates with `mode: "async"`; launch worktree candidates with `t3_thread_launch`, which has no `mode` parameter. Each gets a standalone brief: the task, the path to the shared grounding, its own output location, and instructions to produce both the artifact and a short rationale. End the turn; follow launched threads with `t3_thread_wait` and `t3_thread_read`.
+Launch `delegate_task` candidates with `mode: "async"`; launch worktree candidates with `t3_thread_launch`, which has no `mode` parameter. Launch writers per [T3 delegation](../setup-pstack/references/t3-delegation.md#tool-for-the-job): `title`, the brief as `message`, `modelSelection`, and the worktree `workspaceStrategy`, from a `full-access`/`default` parent, after telling the user how many threads you are opening. Use T3's tools, not the harness's own subagent tool. Each gets a standalone brief: the task, the path to the shared grounding, its own output location, and instructions to produce both the artifact and a short rationale. End the turn; follow launched threads with `t3_thread_wait` and `t3_thread_read`.
 
 Each rationale names the alternatives the candidate considered and what it rejected.
 

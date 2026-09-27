@@ -19,20 +19,17 @@ def load_policy() -> dict | None:
         return {"error": f"unparseable {POLICY_PATH}"}
 
 
-def policy_models(policy: dict, harness: str) -> dict[str, tuple[str | None, str | None]]:
+REASONING_OPTION = {"codex": "reasoningEffort", "opencode": "variant", "pi": "thinking"}
+
+
+def pool_routes(policy: dict, harness: str) -> dict[str, tuple[str | None, str | None]]:
+    """Pool entries for this harness as (model, reasoning) pairs; None reasoning means provider default."""
     out = {}
-    for pname, pdef in (policy.get("profiles") or {}).items():
-        entry = pdef.get(harness) or {}
-        model = entry.get("model")
-        if harness == "codex":
-            effort = entry.get("reasoning_effort")
-        else:
-            effort = (entry.get("options") or {}).get("reasoningEffort")
-            if model and "/" in model:
-                pass
-        if entry.get("selection") == "inherit-parent":
-            model = "inherit-parent"
-        out[pname] = (model, effort)
+    for entry in policy.get("pool") or []:
+        if entry.get("providerInstanceId") != harness:
+            continue
+        options = entry.get("options") or {}
+        out[entry.get("id", "?")] = (entry.get("model"), options.get(REASONING_OPTION.get(harness, "")))
     return out
 
 
@@ -62,13 +59,15 @@ def routing_report(audit: SessionAudit, policy: dict | None) -> list[str]:
         return [f"no policy at {POLICY_PATH} (routing unverified)"] + drift
     if "error" in policy:
         return [policy["error"]] + drift
-    models = policy_models(policy, harness)
+    if policy.get("version") != 2:
+        return [f"{POLICY_PATH} is not a version 2 pool (run model_policy.py convert)"] + drift
+    models = pool_routes(policy, harness)
     lines = []
     seen = set()
     for r in audit.routing:
         actual = _actual_route(harness, r)
-        match = [p for p, v in models.items() if v == actual]
-        status = f"profile~{match[0]}" if match else "NO POLICY MATCH"
+        match = [p for p, (m, e) in models.items() if m == actual[0] and e in (None, actual[1])]
+        status = f"pool~{match[0]}" if match else "NOT IN POOL"
         key = (r.scope, actual, status)
         if key in seen:
             continue

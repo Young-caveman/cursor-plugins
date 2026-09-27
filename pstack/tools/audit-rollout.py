@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit Codex and OpenCode session history.
+"""Audit Codex, OpenCode, and Pi session history.
 
 Extracts a verifiable timeline from a harness session: which skills loaded,
 which tools ran (with the shell command inside exec/bash), the model route
@@ -9,6 +9,7 @@ text for reading or --json for a later instruction-checker to consume.
 Backends:
   codex    ~/.codex/sessions/**/rollout-*.jsonl
   opencode ~/.local/share/opencode/opencode.db (SQLite, read-only)
+  pi       ~/.pi/agent/sessions/<cwd>/<session>.jsonl
 """
 
 from __future__ import annotations
@@ -19,27 +20,27 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from session_audit import codex, opencode
+from session_audit import codex, opencode, pi
 from session_audit.policy import load_policy
 from session_audit.report import print_json, print_report
 
-BACKENDS = {"codex": codex, "opencode": opencode}
+BACKENDS = {"codex": codex, "opencode": opencode, "pi": pi}
 
 
 def pick_backend(harness: str, session: str):
     if harness in BACKENDS:
         return BACKENDS[harness]
     if session.endswith(".jsonl") or Path(session).is_file():
-        return codex
+        return pi if "/.pi/agent/sessions/" in str(Path(session).expanduser().resolve()) else codex
     if session.startswith("ses_"):
         return opencode
-    for be in (codex, opencode):
+    for be in (codex, opencode, pi):
         try:
             be.resolve_session(session)
             return be
         except (FileNotFoundError, ValueError):
             continue
-    sys.exit(f"no codex or opencode session matching {session!r}")
+    sys.exit(f"no codex, opencode, or pi session matching {session!r}")
 
 
 def cmd_list(args):
@@ -56,6 +57,8 @@ def cmd_list(args):
                 f"codex    {r['session_id']}  turns={r['turns']:<3} "
                 f"{str(r['started'])[:19]:<20} {r['cli_version'] or '?':<8} {r['cwd']}"
             )
+        elif r["harness"] == "pi":
+            print(f"pi       {r['session_id']}  {str(r['started'])[:19]:<20} {r['cwd']}")
         else:
             print(
                 f"opencode {r['session_id']}  "
@@ -79,6 +82,8 @@ def cmd_follow(args):
     path = be.resolve_session(args.session)
     if be is codex:
         follow_codex(path, args)
+    elif be is pi:
+        pi.follow(path, interval=args.interval, from_start=args.from_start)
     else:
         opencode.follow(path, interval=args.interval, from_start=args.from_start)
 
@@ -162,7 +167,7 @@ def main():
     p_list = sub.add_parser("list", help="list known sessions")
     p_list.add_argument("--limit", type=int, default=0, help="show only the N most recent")
     p_list.add_argument(
-        "--harness", choices=["codex", "opencode", "all"], default="all", help="filter by harness"
+        "--harness", choices=["codex", "opencode", "pi", "all"], default="all", help="filter by harness"
     )
     p_list.set_defaults(func=cmd_list)
 
@@ -170,7 +175,7 @@ def main():
     p_show.add_argument("session", help="session id fragment or path to rollout jsonl")
     p_show.add_argument(
         "--harness",
-        choices=["codex", "opencode", "auto"],
+        choices=["codex", "opencode", "pi", "auto"],
         default="auto",
         help="force a backend (default: detect)",
     )
@@ -181,7 +186,7 @@ def main():
     p_follow.add_argument("session", help="session id fragment or path to rollout jsonl")
     p_follow.add_argument(
         "--harness",
-        choices=["codex", "opencode", "auto"],
+        choices=["codex", "opencode", "pi", "auto"],
         default="auto",
         help="force a backend (default: detect)",
     )

@@ -32,6 +32,7 @@ class DiscoveryTest(unittest.TestCase):
         self.project.mkdir()
         self.codex = self.root / "codex"
         self.claude = self.root / "claude"
+        self.pi = self.root / "pi"
 
     def codex_session(self, entries):
         day = self.codex / "2026/09/26"
@@ -51,9 +52,18 @@ class DiscoveryTest(unittest.TestCase):
         attachment = {"type": "skill_listing", "names": names, "content": content}
         (folder / "s.jsonl").write_text(json.dumps({"type": "attachment", "attachment": attachment}) + "\n")
 
+    def pi_session(self, names, system=True):
+        folder = self.pi / "--project--"
+        folder.mkdir(parents=True)
+        block = "<available_skills>" + "".join(f"<skill><name>{n}</name></skill>" for n in names) + "</available_skills>"
+        lines = [json.dumps({"type": "session", "cwd": str(self.project)})]
+        if system:
+            lines.append(json.dumps({"type": "message", "message": {"role": "system", "sections": {"skills": block}}}))
+        (folder / "s.jsonl").write_text("\n".join(lines) + "\n")
+
     def run_check(self):
         args = ["--project", str(self.project), "--source", str(self.source),
-                "--codex-sessions", str(self.codex), "--claude-projects", str(self.claude)]
+                "--codex-sessions", str(self.codex), "--claude-projects", str(self.claude), "--pi-sessions", str(self.pi)]
         return harness_discovery.main(args)
 
     def capture(self):
@@ -88,6 +98,25 @@ class DiscoveryTest(unittest.TestCase):
         self.assertEqual(r["codex"]["missing"], ["beta", "gamma"])
         self.assertEqual(r["claude"]["status"], "no session for this project")
         self.assertTrue(r["opencode"]["status"].startswith("unverifiable"))
+
+    def test_pi_hides_manual_only_skills(self):
+        self.pi_session(["alpha", "gamma", "unrelated"])
+        code, r = self.capture()
+        self.assertEqual(code, 0)
+        self.assertEqual(r["pi"]["status"], "ok")
+        self.assertEqual(r["pi"]["expected"], 2)
+
+    def test_pi_missing_skill_differs(self):
+        self.pi_session(["alpha"])
+        code, r = self.capture()
+        self.assertEqual(code, 1)
+        self.assertEqual(r["pi"]["missing"], ["gamma"])
+
+    def test_pi_without_system_message_is_unverifiable(self):
+        self.pi_session(["alpha"], system=False)
+        code, r = self.capture()
+        self.assertEqual(code, 0)
+        self.assertTrue(r["pi"]["status"].startswith("unverifiable"))
 
 
 if __name__ == "__main__":

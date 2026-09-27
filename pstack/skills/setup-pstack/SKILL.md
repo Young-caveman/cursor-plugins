@@ -7,7 +7,7 @@ description: Configure PStack's user-owned model pool for T3 Code sessions. Use 
 
 Keep one user-owned policy at `~/.config/pstack/models.json`. Version 2 records a **pool of concrete delegation targets**: each entry names a T3 `providerInstanceId`, a model ID, and the option values confirmed for it. The pool is shared by every task role; there are no mandatory per-role tables or fixed combinations. Read [the pool contract](references/model-routing.md) before creating or changing the policy.
 
-T3 Code is the runtime boundary. Discover what can run with `orchestrator_capabilities` in this thread and pass the resolved `providerInstanceId`, `model`, and `options` to `delegate_task`. Provider catalogs and option names differ: Codex advertises `reasoningEffort`, OpenCode advertises `variant`, Claude advertises `effort`, and options such as `serviceTier`, `fastMode`, and `contextWindow` are separate. Discover each provider from this thread's snapshot; never carry a model or option name from another provider, harness, or older session.
+T3 Code is the runtime boundary. Discover what can run with `orchestrator_capabilities` in this thread and pass the resolved `providerInstanceId`, `model`, and `options` to `delegate_task`. Provider catalogs and option names differ: Codex advertises `reasoningEffort`, OpenCode advertises `variant`, Pi advertises `thinking`, Claude advertises `effort`, and options such as `serviceTier`, `fastMode`, and `contextWindow` are separate. Discover each provider from this thread's snapshot; never carry a model or option name from another provider, harness, or older session.
 
 ## 1. Discover this thread's capabilities
 

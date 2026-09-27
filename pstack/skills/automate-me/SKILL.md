@@ -14,7 +14,7 @@ This skill sequences a history-mining pass, skill authoring, and **unslop**. Use
 
 ### 0. Check for an existing skill
 
-Look recursively for `*-mode/SKILL.md` matching the user's handle in the project's `.agents/skills/` and `.claude/skills/`, the user-level `~/.agents/skills/`, `~/.claude/skills/`, and `~/.config/opencode/skills/`, and the PStack source's `skills/` (follow a linked skill's real path to find it). Mode skills can live in a personal category directory (`<skills>/<handle>/`), not only at the top level. If one exists, confirm intent with a structured question (unless they already said "update my skill" or similar):
+Look recursively for `*-mode/SKILL.md` matching the user's handle in the project's `.agents/skills/` and `.claude/skills/`, the user-level `~/.agents/skills/`, `~/.claude/skills/`, `~/.config/opencode/skills/`, and `~/.pi/agent/skills/`, and the PStack source's `skills/` (follow a linked skill's real path to find it). Mode skills can live in a personal category directory (`<skills>/<handle>/`), not only at the top level. If one exists, confirm intent with a structured question (unless they already said "update my skill" or similar):
 
 - Update the existing skill (default for repeat runs)
 - Start fresh (rare, ask why before doing it)
@@ -70,7 +70,7 @@ Use `skill-creator` when installed; otherwise author directly per the [authoring
 - Handle: the user's first name or chosen identifier.
 - Frontmatter `description`: trigger on their name + `/<handle>-mode` + "work in their style", not on generic keywords like "write code" or "review PR".
 - Frontmatter formatting: keep `description` as one YAML scalar. Quote it or use `description: >-` with indented continuation lines when punctuation or wrapping requires it.
-- Frontmatter `disable-model-invocation: true` by default, with a description that opens "Run only when the user asks for this skill by name or a workflow the user started routes here." (Codex and OpenCode ignore the field). Opt out of both only if the user explicitly wants their mode to apply on every turn.
+- Frontmatter `disable-model-invocation: true` by default, with a description that opens "Run only when the user asks for this skill by name or a workflow the user started routes here." (Claude Code and Pi honor the field; Codex and OpenCode ignore it). Opt out of both only if the user explicitly wants their mode to apply on every turn.
 
 ### 5. Iterate on prose
 

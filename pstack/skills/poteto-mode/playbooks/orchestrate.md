@@ -7,7 +7,7 @@ Ceremony must scale with the program. On cheap near-identical units, collapse it
 Three rules carry the rest.
 
 - Completions are queue events, not interrupts.
-- Every spawn and every resume carries the standing orders verbatim.
+- Every spawn and every follow-up message carries the standing orders verbatim.
 - The brief is the product. A vague brief fails quietly, because a worker cannot ask you a question.
 
 #### Roles and placement
@@ -22,7 +22,7 @@ Depth stays at coordinator, track, worker. Author the track decomposition per pr
 
 Create the store at `~/.local/state/pstack/orchestrate/<project-slug>/`, using the repository directory name as the slug, and resolve it to an absolute path. Pass that path in every worker and sub-coordinator brief. In each shell, export it as `ORCH_STORE` or pass `--store <absolute path>` to `bun scripts/orch/orch.ts` (written below as `orch`); shell exports do not carry into T3 child threads. Keep the store outside the project so it never lands in the repo. Every file has exactly one writer. Owners publish facts, readers aggregate at read time; the canonical TSV and JSON remain readable without the CLI.
 
-- `preferences.md` is the standing-orders register: numbered lines, one constraint each (model policy, stack shape and count, verification bar, forbidden paths, escalation policy). Paste it verbatim into every spawn and every resume. Directives decay across resumes, and each dropped one costs a human turn. When you catch yourself restating an instruction, append the line before you act (principle-encode-lessons-in-structure).
+- `preferences.md` is the standing-orders register: numbered lines, one constraint each (model policy, stack shape and count, verification bar, forbidden paths, escalation policy). Paste it verbatim into every spawn and every follow-up message. When a standing order changes mid-run, steer it into every active lane (`t3_thread_send` with `mode: "steer"`), and fix or cancel stale queued instructions with `t3_queue_list`, `t3_queue_edit`, and `t3_queue_cancel`. Directives decay across follow-ups, and each dropped one costs a human turn. When you catch yourself restating an instruction, append the line before you act (principle-encode-lessons-in-structure).
 - `overview.md` is the durable PR and issue DB. Append. Never rewrite wholesale per event.
 - `units.tsv` has one row per unit: id, track, state, branch, PR, head SHA, brief path. Update rows in place.
 - `frontier.json` is the computed merge frontier, per Stack safety.
@@ -53,7 +53,7 @@ Size the brief to the unit. A one-command unit gets the template collapsed to a 
 
 A sub-coordinator brief adds the absolute store path, its track boundary and unit list, its spawn budget, the drain protocol, and the rollup format (per child: name, status, PR, head SHA, verdict, one line, plus track status and frontier delta).
 
-A dependency is a context relay, not just ordering. Undeclared upstream context makes the worker guess. Missing fields are a refuse-to-spawn condition. Audit one sampled worker brief per sub-coordinator per wave, concurrently with the wave it samples, never as a gate in front of it. A failing brief stops that track and fixes the sub-coordinator's instructions, not just the worker, because brief quality decays late in a run. Never resume-chain a brief. Respawn fresh with consolidated scope.
+A dependency is a context relay, not just ordering. Undeclared upstream context makes the worker guess. Missing fields are a refuse-to-spawn condition. Audit one sampled worker brief per sub-coordinator per wave, concurrently with the wave it samples, never as a gate in front of it. A failing brief stops that track and fixes the sub-coordinator's instructions, not just the worker, because brief quality decays late in a run. Never chain follow-ups onto a brief. Respawn fresh with consolidated scope.
 
 #### Steps
 
@@ -68,7 +68,7 @@ A dependency is a context relay, not just ordering. Undeclared upstream context 
 #### Queue and drain
 
 - On a completion notification, run `orch inbox push <agent> <unit> <status> [--report PATH]` and return to what you were doing. Never deep-review inline. A completion that needs review becomes a verifier unit. Never review a diff inside a drain.
-- Drain in batches at four points: the end of a critical section, a track rollup, a frontier watcher wake (arm it via the loop skill, with a long heartbeat fallback), and before a human report. Begin each batch with `orch inbox drain`. Arrivals during a drain wait for the next one.
+- Drain in batches at four points: the end of a critical section, a track rollup, a frontier watcher wake (a watcher child, with a `schedule_task` heartbeat as fallback), and before a human report. Begin each batch with `orch inbox drain`. Arrivals during a drain wait for the next one.
 - Critical sections you finish first: authoring a brief, a stack operation, a conflict decision, writing a gate, updating ledger or frontier.
 - Each drain classifies every pointer (landed, needs-verify, failed, zombie, noise), writes the resulting rows through `orch unit add`, `orch unit set`, and `orch ledger record`, runs `orch status`, then spawns the next wave in one message.
 - Account for every spawned child at its track's rollup: arrived, respawned, or its scope explicitly absorbed. Silently redoing a missing child's work hides both the wasted spend and the coverage gap its result existed to close.
@@ -84,7 +84,7 @@ A dependency is a context relay, not just ordering. Undeclared upstream context 
 
 #### Verification
 
-Scale verification to the unit. When VERIFY is a single cheap command, the worker runs it and reports the output, and the coordinator spot-checks receipts. A dedicated verifier agent using a different allowed model family from the worker is for units whose verification is expensive, judgment-laden, or high-blast-radius; if the role policy has no such profile, report that limit. A verifier agent whose entire product would be rerunning one command is ceremony, not verification.
+Scale verification to the unit. When VERIFY is a single cheap command, the worker runs it and reports the output, and the coordinator spot-checks receipts. A dedicated verifier agent using a different allowed model family from the worker is for units whose verification is expensive, judgment-laden, or high-blast-radius; if the pool has no such entry, report that limit. A verifier agent whose entire product would be rerunning one command is ceremony, not verification.
 
 Write ledger rows with `orch ledger record`. Check the current PR and head SHA with `orch ledger check`. `ledger.tsv`, one row per verdict, keyed by PR number plus head SHA: `live-ui-verified | unit-test-verified | type-check-only | verifier-blocked | verifier-failed`. CI green is an input to a verdict, not a verdict. Behavioral work needs better than `type-check-only`. `verifier-blocked` is not a pass. Respawn when the environment heals. `verifier-failed` gets a fix unit, not a re-verify. A worker may self-report. A verifier overrides it on the same key. A new head SHA voids the row, so re-verify after restack. The ledger answers "was this verified", not memory and not the transcript.
 
@@ -92,7 +92,7 @@ A unit is not done until its output is externalized the moment it lands, never b
 
 #### Liveness and failure
 
-- Never resume an agent to check on it. A resume restarts an idle agent. Probe read-only: the ledger, `units.tsv`, `gh`, pushed branches, the child's state via `task_status` or `t3_thread_read`. Transcript mtime is not liveness.
+- Never message an agent to check on it: `t3_thread_send` starts an idle thread, and `mode: "restart"` interrupts a busy one. Probe read-only: the ledger, `units.tsv`, `gh`, pushed branches, the child's state via `task_status` or `t3_thread_read`, and `t3_pending_request_list` for a lane blocked on a question (answer it with `t3_pending_request_respond` when the answer is yours). Transcript mtime is not liveness. Stop an abandoned lane with `task_cancel` or `t3_thread_interrupt`; don't just stop reading it.
 - A silent death gets a synthetic postmortem row in the inbox (unit, failure mode, last evidence, options). Replan on evidence as it arrives. Never wait for full quiescence.
 - Retry by mode: cap-hit or oom, respawn with smaller scope. Network-drop, retry as-is. Tool-error, retry once on another `default`-tier pool entry; if none fits, report it and retry on the same entry only when repeating the request is safe. Unknown, retry once. Two retries, then abandon the unit and replan around it.
 - A zombie that returns hours late reconciles against the current frontier and ledger before anything is accepted. Salvage unique findings through a fresh unit, never a blind merge.

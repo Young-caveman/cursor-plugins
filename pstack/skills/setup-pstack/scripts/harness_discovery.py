@@ -2,11 +2,13 @@
 """Which PStack skills did a harness actually offer its model in a project?
 
 Reads the skill list each harness recorded in its newest session log for the
-project: Codex's injected skill catalog and Claude Code's `skill_listing`
-attachment. Claude Code hides `disable-model-invocation` skills and offers
-`paths:` skills only near matching files; both are excluded from its expected
-set. OpenCode records no skill list, so it is reported as unverifiable.
-Read-only; start a session in the project first.
+project: Codex's injected skill catalog, Claude Code's `skill_listing`
+attachment, and the `<available_skills>` block in Pi's system message. Claude
+Code and Pi hide `disable-model-invocation` skills, and Claude Code offers
+`paths:` skills only near matching files; those are excluded from the expected
+sets. OpenCode records no skill list, so it is reported as unverifiable.
+Harnesses without a session in the project are listed but don't fail the
+check. Read-only; start a session in the project first.
 """
 
 import argparse
@@ -59,6 +61,25 @@ def claude_skills(path):
     return listing
 
 
+def newest_pi_session(sessions, project):
+    for path in sorted(sessions.glob("*/*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True):
+        with path.open(encoding="utf-8") as f:
+            first = json.loads(f.readline() or "{}")
+        if first.get("type") == "session" and first.get("cwd") == str(project):
+            return path
+    return None
+
+
+def pi_skills(path):
+    for line in path.read_text(encoding="utf-8").splitlines():
+        entry = json.loads(line)
+        message = entry.get("message") or {}
+        if entry.get("type") == "message" and message.get("role") == "system":
+            block = (message.get("sections") or {}).get("skills", "")
+            return {n: {"prefix": None} for n in re.findall(r"<name>([\w.:-]+)</name>", block)}
+    return None
+
+
 def compare(harness, session, offered, skills):
     if session is None:
         return {"harness": harness, "session": None, "status": "no session for this project"}
@@ -82,6 +103,7 @@ def main(argv=None):
     parser.add_argument("--source", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--codex-sessions", type=Path, default=Path.home() / ".codex/sessions")
     parser.add_argument("--claude-projects", type=Path, default=Path.home() / ".claude/projects")
+    parser.add_argument("--pi-sessions", type=Path, default=Path.home() / ".pi/agent/sessions")
     args = parser.parse_args(argv)
     project, skills = args.project.resolve(), source_skills(args.source.resolve())
     frontmatter = {p.parent.name: p.read_text(encoding="utf-8").split("\n---", 1)[0]
@@ -91,13 +113,17 @@ def main(argv=None):
 
     codex = newest_codex_session(args.codex_sessions, project)
     claude = newest_claude_session(args.claude_projects, project)
+    pi = newest_pi_session(args.pi_sessions, project)
+    pi_offered = pi_skills(pi) if pi else {}
     results = [
         compare("codex", codex, codex_skills(codex) if codex else {}, skills),
         compare("claude", claude, claude_skills(claude) if claude else {}, skills - hidden - conditional),
+        compare("pi", pi, pi_offered, skills - hidden) if pi_offered is not None else
+        {"harness": "pi", "session": str(pi), "status": "unverifiable: this Pi session recorded no system message; ask the model"},
         {"harness": "opencode", "status": "unverifiable: OpenCode does not record the skill list; ask the model"},
     ]
     print(json.dumps(results, indent=2))
-    return 0 if all(r["status"] == "ok" for r in results if r["harness"] != "opencode") else 1
+    return 1 if any(r["status"] == "differs" for r in results) else 0
 
 
 if __name__ == "__main__":

@@ -29,7 +29,7 @@ git clone --depth 1 https://github.com/Young-caveman/cursor-plugins ~/.local/sha
 DO_NOT_TRACK=1 npx skills add ~/.local/share/pstack/pstack -g -a claude-code -a codex -a opencode -s '*' -y
 ```
 
-The [`skills`](https://github.com/vercel-labs/skills) installer copies the 47 skills into `~/.agents/skills`, which Codex, OpenCode, and Pi read, and links each one from `~/.claude/skills` for Claude Code. Pi needs no flag of its own. They show up in every project. Drop the `-a` flags for harnesses you don't use. `DO_NOT_TRACK=1` turns off the installer's usage reporting to Vercel.
+The [`skills`](https://github.com/vercel-labs/skills) installer copies the 46 skills into `~/.agents/skills`, which Codex, OpenCode, and Pi read, and links each one from `~/.claude/skills` for Claude Code. Pi needs no flag of its own. They show up in every project. Drop the `-a` flags for harnesses you don't use. `DO_NOT_TRACK=1` turns off the installer's usage reporting to Vercel.
 
 To update, `git -C ~/.local/share/pstack pull` and run the same `npx` command again. It won't delete a skill PStack removed; do that with `npx skills remove -g -s <name> -y`. Start a new session afterwards: OpenCode caches skills.
 
@@ -140,7 +140,6 @@ For long runs, the [autonomous run playbook](./skills/poteto-mode/playbooks/auto
 | [`/swarm`](./skills/swarm/SKILL.md) | you want N parallel workers across different slices or races, then one aggregated report. |
 | [`/interrogate`](./skills/interrogate/SKILL.md) | you have a diff and want reviewers from different pool entries to try to break it, including a strict code-quality lens. |
 | [`/automate-me`](./skills/automate-me/SKILL.md) | you want your own `-mode` skill, drafted from how you've actually worked. |
-| [`/make-bot-ui`](./skills/make-bot-ui/SKILL.md) | you want a page or dashboard whose buttons wake a Grok Bot over a webhook, including the sender-key handoff and Tailscale. |
 | [`/setup-pstack`](./skills/setup-pstack/SKILL.md) | you want to configure PStack's shared model pool for T3 Code sessions (all harnesses). |
 | [`/reflect`](./skills/reflect/SKILL.md) | a long task landed and you want the recipe captured as a skill edit. |
 | [`/teach`](./skills/teach/SKILL.md) | you want to actually understand a change or subsystem, not just have it summarized. runs how + why and weaves one plain explanation, built up diagram by diagram. |
@@ -262,10 +261,6 @@ The harnesses offer plan modes, but their read-only enforcement and MCP access u
 Type [`/automate-me`](./skills/automate-me/SKILL.md). It mines your recent T3 threads (falling back to harness logs), drafts a `<your-name>-mode` skill from how you've actually worked, and routes through PStack underneath. You keep PStack as the base and end up with your own routing skill alongside `poteto-mode`.
 
 Models are configurable too. Use [`setup-pstack`](./skills/setup-pstack/SKILL.md). It keeps one user-owned pool at `~/.config/pstack/models.json` (optionally tiered `default` or `escalation`), discovered from what your T3 Code thread can actually run. Every workflow that spawns agents draws from it; the pool contract is that a task may mix entries when different strengths help, a model outside it needs your explicit go-ahead, and setup never upgrades a saved choice on its own.
-
-## Automations
-
-PStack also ships a dormant [benny automation pack](./automations/benny/), written for Cursor automations and not adapted to T3 Code. Treat it as untested here.
 
 ## License
 

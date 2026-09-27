@@ -9,7 +9,7 @@ git clone --depth 1 https://github.com/Young-caveman/cursor-plugins ~/.local/sha
 DO_NOT_TRACK=1 npx skills add ~/.local/share/pstack/pstack -g -a claude-code -a codex -a opencode -s '*' -y
 ```
 
-The first line downloads PStack. The second uses the [`skills`](https://github.com/vercel-labs/skills) installer to copy all 47 skills into `~/.agents/skills`, which Codex and OpenCode read, and to link each one from `~/.claude/skills` for Claude Code. Every project on this machine now sees them. Drop the `-a` flags for harnesses you don't use. `DO_NOT_TRACK=1` turns off the installer's usage reporting.
+The first line downloads PStack. The second uses the [`skills`](https://github.com/vercel-labs/skills) installer to copy all 46 skills into `~/.agents/skills`, which Codex and OpenCode read, and to link each one from `~/.claude/skills` for Claude Code. Every project on this machine now sees them. Drop the `-a` flags for harnesses you don't use. `DO_NOT_TRACK=1` turns off the installer's usage reporting.
 
 Check it worked: open a new T3 thread in any project and ask the agent which PStack skills it can see. It should name `poteto-mode` and `setup-pstack` among them.
 

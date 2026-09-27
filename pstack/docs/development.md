@@ -28,7 +28,7 @@ python3 skills/setup-pstack/scripts/bench_check.py --project /path/to/repo --bas
 ```
 
 - `pstack_doctor.py` reports drift between the source and the project, read-only. It only understands linked installs.
-- `harness_discovery.py` lists which skills Codex and Claude Code offered their model in the newest session there. OpenCode records no such list, so ask the model.
+- `harness_discovery.py` lists which skills Codex, Claude Code, and Pi offered their model in the newest session there. OpenCode records no such list, so ask the model.
 - `bench_check.py` lists what a test run left in a test worktree; `--reset` asks, then resets it to the base branch and keeps the links.
 
 Doctor findings, including what older PStack versions left behind:
@@ -51,7 +51,7 @@ python3 skills/setup-pstack/scripts/model_policy.py ready --snapshot <capabiliti
 
 `validate` checks structure and requires at least one `default` entry; `ready` checks advertised availability against a saved capabilities snapshot. Only a successful delegated run proves a target works. A version 1 role policy is left untouched; `model_policy.py convert` shows a reviewed conversion.
 
-`pstack/tools/audit-rollout.py` reads Codex and OpenCode session logs and reports which model and effort actually ran.
+`pstack/tools/audit-rollout.py` reads Codex, OpenCode, and Pi session logs and reports which model and effort actually ran, and which pool entry each run matches.
 
 ## Tests
 

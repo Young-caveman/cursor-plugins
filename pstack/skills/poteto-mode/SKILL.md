@@ -2,13 +2,11 @@
 name: poteto-mode
 description: Run only when the user asks for this skill by name or a workflow the user started routes here. poteto's agent style for concise, detailed responses, deliberate subagents, unslopped prose, simple code, and verified work. Use for poteto, /poteto-mode, or requests to work in this style.
 disable-model-invocation: true
-mode: true
-icon: crown
-color: yellow
-reminder: New task? Playbook match or rigor needed -> apply /poteto-mode. Casual turn or user opts out -> don't.
 ---
 
 # Poteto mode
+
+**Stays on.** Once invoked, this mode holds for the rest of the conversation: apply it to each new task that matches a playbook or needs rigor, skip casual turns, and stop when the user opts out.
 
 **Entry gate.** Before any of this applies, run `../setup-pstack/scripts/model_policy.py validate`. If it fails or `~/.config/pstack/models.json` is missing, stop and tell the user to run **setup-pstack** first. This checks structure; before each delegated call, resolve its pool entry against live `orchestrator_capabilities` per [T3 delegation](../setup-pstack/references/t3-delegation.md). Do not substitute a one-off explicit model choice to bypass the gate. The pool is shared by every harness, so one setup covers all of them.
 
@@ -90,11 +88,11 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 ## Subagents
 
-**Delegation.** Every delegated call follows [T3 delegation](../setup-pstack/references/t3-delegation.md). Playbook delegates get a brief that opens with: "Read `<absolute path of this SKILL.md>` in full before any work, including its Principles index." Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) keep their own brief templates.
+**Delegation.** Every delegated call follows [T3 delegation](../setup-pstack/references/t3-delegation.md): T3's `delegate_task`, never the harness's own subagent tool. Playbook delegates get a brief that opens with: "Read `<absolute path of this SKILL.md>` in full before any work, including its Principles index." Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) keep their own brief templates.
 
 **Model choice.** Pick from the pool with `model_policy.py list --tier default`. Cross-cutting designs, gnarly concurrency, subtle algorithms, and a fix that already failed once justify an `escalation` entry; say so when you use one. Mechanical edits take the cheapest `default` entry that can do them. A target outside the pool needs the user's explicit authorization. Never silently raise effort.
 
-You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. Interrupt-chained resumes silently drop directives, so fire a fresh subagent with consolidated scope rather than trusting a "done" summary. For a second opinion, choose a pool entry from a different provider. Agreement across differently trained models is stronger evidence than repeated calls to one model.
+You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. Chains of follow-up messages to one child silently drop directives, so fire a fresh subagent with consolidated scope rather than trusting a "done" summary. For a second opinion, choose a pool entry from a different provider. Agreement across differently trained models is stronger evidence than repeated calls to one model.
 
 ## Writing the reply
 
