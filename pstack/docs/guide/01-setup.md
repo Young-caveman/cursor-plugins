@@ -1,41 +1,44 @@
 # Install and set up PStack
 
-This page covers installing PStack, choosing a shared model pool, and running a first task. PStack runs inside T3 Code with Codex, Claude Code, or OpenCode.
+This page covers installing PStack, choosing a shared model pool, and running a first task. PStack runs inside T3 Code with Codex, Claude Code, or OpenCode. You need `git`, Node.js (for `npx`), and Python 3.9 or later.
 
-## Why the setup looks like this
-
-PStack isn't finished when you install it. You keep bending it until it fits how you work. Three decisions follow from that.
-
-**Install for use, link for editing.** Most people install PStack once for their user account: every project sees the skills, and an update is `git pull` plus one command. If you change PStack itself, link its skills into one project instead. Every link points back at your checkout, so the next session there runs your edited text with nothing to reinstall. The catch: a link is untracked, so it shows up on every branch of that checkout. To try a PStack change in isolation, use a separate worktree; a branch won't isolate it.
-
-**The model pool is yours, not the project's.** `~/.config/pstack/models.json` records which models your T3 Code can run and which ones you're willing to pay for. Those are facts about you, and they don't change from repo to repo. One file means one setup covers Codex, Claude Code, and OpenCode everywhere, and no model choice ever lands in a project's git history. Per-project pools would each need re-checking whenever a provider renames a model or you move one to the `escalation` tier.
-
-**Anything a skill writes will drift.** Links follow the source; files don't. The main one is the `verify-<app>` skill from `/create-verification-skill`. It's committed to the project and describes the app as it was on the day it was generated. Older PStack versions also left lock files, `AGENTS.md` pointers, and `.cursor/skills` output behind. Run `pstack_doctor.py` to name them, then fix by case:
-
-| What drifted | Doctor finding | Fix |
-|---|---|---|
-| Links missing, dangling, pointing into another checkout, or shadowed by a real copy | `unlinked-skill`, `dangling-link`, `foreign-source`, `shadowing-copy` | `pstack_link.py --apply` (re-link from the right checkout for `foreign-source`; inspect a copy before replacing it) |
-| Links showing as untracked files | `unignored-links` | `pstack_link.py --apply` |
-| `skills-lock.json` pinning PStack hashes, or an instruction line pointing at a removed skill | `lock-pins-live-source`, `dangling-reference` | Delete the entry or line by hand |
-| A verification skill still under `.cursor/skills` | `cursor-era-skill` | Move it to `.agents/skills` and link it into `.claude/skills` |
-| `verify-<app>`'s feature map no longer matches the app | none; the doctor can't see app behavior | [`/maintain-verification-skill`](../../skills/maintain-verification-skill/SKILL.md) |
-
-The generator stamps its output with `metadata.pstack-generated-by: create-verification-skill@1`. The doctor doesn't compare that stamp yet, so it can't tell you a verification skill predates the current generator. You'll have to check that yourself.
-
-## Install for every project
+## Install
 
 ```bash
 git clone --depth 1 https://github.com/Young-caveman/cursor-plugins ~/.local/share/pstack
 DO_NOT_TRACK=1 npx skills add ~/.local/share/pstack/pstack -g -a claude-code -a codex -a opencode -s '*' -y
 ```
 
-This copies the skills into `~/.agents/skills` (Codex, OpenCode) and links each from `~/.claude/skills` (Claude Code). Drop the `-a` flags for harnesses you don't use; `DO_NOT_TRACK=1` turns off the installer's usage reporting. To update, `git pull` in the clone and rerun the `npx` command. A skill PStack removed stays installed until `npx skills remove -g -s <name> -y`. Edit skills in the clone, never in `~/.agents/skills`: the next update overwrites those copies.
+The first line downloads PStack. The second uses the [`skills`](https://github.com/vercel-labs/skills) installer to copy all 47 skills into `~/.agents/skills`, which Codex and OpenCode read, and to link each one from `~/.claude/skills` for Claude Code. Every project on this machine now sees them. Drop the `-a` flags for harnesses you don't use. `DO_NOT_TRACK=1` turns off the installer's usage reporting.
 
-Then skip to [How skills get invoked](#how-skills-get-invoked). The doctor and link scripts below are for linked installs only.
+Check it worked: open a new T3 thread in any project and ask the agent which PStack skills it can see. It should name `poteto-mode` and `setup-pstack` among them.
 
-## Or link the skills into one project
+**Updating.** Pull the clone and rerun the installer:
 
-For editing PStack. Skills are symlinks to this checkout, so a text edit to a skill is live. Don't combine this with the user-level install on one machine: the project would show every skill twice. From the `pstack` directory, preview and then apply:
+```bash
+git -C ~/.local/share/pstack pull
+DO_NOT_TRACK=1 npx skills add ~/.local/share/pstack/pstack -g -a claude-code -a codex -a opencode -s '*' -y
+```
+
+Then start new sessions; OpenCode caches skills until you do. A skill PStack removed stays installed until you run `npx skills remove -g -s <name> -y`.
+
+**Changing a skill.** The installed skills are copies, and the next update overwrites them. Put a skill of your own in `~/.agents/skills/<name>/` under a name PStack doesn't use, and link it into `~/.claude/skills/` for Claude Code. To change PStack's own skills, edit them in the clone and relink as in [Editing PStack itself](#editing-pstack-itself).
+
+## Why the setup looks like this
+
+PStack isn't finished when you install it. You keep bending it until it fits how you work. Three decisions follow from that.
+
+**Installed once, for every project.** The skills describe how you work, not how one repo works, so they live in your home folder and every project sees them. Nothing is written into a project's git.
+
+**The model pool is yours, not the project's.** `~/.config/pstack/models.json` records which models your T3 Code can run and which ones you're willing to pay for. Those are facts about you, and they don't change from repo to repo. One file means one setup covers Codex, Claude Code, and OpenCode everywhere, and no model choice ever lands in a project's git history. The pool is per machine, though: a provider that works on one computer may not be logged in on another, so run setup on each machine rather than copying the file.
+
+**Anything a skill writes will drift.** The main one is the `verify-<app>` skill from `/create-verification-skill`. It's committed to the project and describes the app as it was on the day it was generated. When the app changes, run [`/maintain-verification-skill`](../../skills/maintain-verification-skill/SKILL.md). The generator stamps its output with `metadata.pstack-generated-by: create-verification-skill@1`, but nothing compares that stamp yet, so you'll have to notice an outdated verification skill yourself.
+
+## Editing PStack itself
+
+Skip this unless you change PStack's skills. Instead of installing, link the skills from your clone into one project, so a text edit is live there with nothing to reinstall. Don't combine this with the user-level install on one machine: the project would show every skill twice. A link is untracked, so it shows up on every branch of that checkout; to try a PStack change in isolation, use a separate worktree.
+
+From the clone's `pstack` directory, preview and then apply:
 
 ```bash
 python3 skills/setup-pstack/scripts/pstack_link.py --project /path/to/repo --harness codex --harness opencode --harness claude
@@ -61,6 +64,16 @@ python3 skills/setup-pstack/scripts/harness_discovery.py --project /path/to/repo
 
 `pstack_doctor.py` is a read-only report of drift between the source and the project. `harness_discovery.py` reads the newest Codex and Claude Code session logs for the project and lists which skills each harness actually offered its model; OpenCode records no such list, so ask the model there.
 
+`pstack_doctor.py` reports drift in a linked project, including what older PStack versions left behind (lock files, `AGENTS.md` pointers, `.cursor/skills` output). Fix by case:
+
+| What drifted | Doctor finding | Fix |
+|---|---|---|
+| Links missing, dangling, pointing into another checkout, or shadowed by a real copy | `unlinked-skill`, `dangling-link`, `foreign-source`, `shadowing-copy` | `pstack_link.py --apply` (re-link from the right checkout for `foreign-source`; inspect a copy before replacing it) |
+| Links showing as untracked files | `unignored-links` | `pstack_link.py --apply` |
+| `skills-lock.json` pinning PStack hashes, or an instruction line pointing at a removed skill | `lock-pins-live-source`, `dangling-reference` | Delete the entry or line by hand |
+| A verification skill still under `.cursor/skills` | `cursor-era-skill` | Move it to `.agents/skills` and link it into `.claude/skills` |
+| `verify-<app>`'s feature map no longer matches the app | none; the doctor can't see app behavior | [`/maintain-verification-skill`](../../skills/maintain-verification-skill/SKILL.md) |
+
 ## How skills get invoked
 
 The principle skills, `unslop`, `typescript-best-practices`, and `setup-pstack` may trigger on their own. The 21 workflow skills run only when you ask for them by name, or when a workflow you started routes to one (`/poteto-mode` calling `/how`, for example). Claude Code enforces this through `disable-model-invocation: true`, so there a workflow starts only when you type `/name`. Codex and OpenCode ignore that field, so each workflow's description opens with the same rule as an instruction to the model. That is a request, not a lock: if a model starts a workflow you didn't ask for, stop it and report it. Start one by name: `/name` in Claude Code, `$name` in Codex, or ask the OpenCode agent to use the skill.
@@ -73,7 +86,7 @@ Invoke [`setup-pstack`](../../skills/setup-pstack/SKILL.md) from a T3 Code threa
 
 Setup saves one shared pool at `~/.config/pstack/models.json`, and one setup covers every harness. Each entry has a unique `id`, a `providerInstanceId`, a model, its confirmed options, and an optional `tier` (`default` or `escalation`). Keep at least one `default` entry for routine work; setup asks which others are expensive enough to reserve for hard tasks. There are no per-role tables and no required cost, concurrency, or retry settings. Setup does not raise `serviceTier`, `fastMode`, or other non-reasoning options on its own and does not change your main chat model. Reasoning options differ per provider (Codex `reasoningEffort`, OpenCode `variant`, Claude `effort`), so a level never carries from one model to another. T3's Claude adapter can also remap some effort values, so check what actually ran.
 
-You can inspect the pool with `python3 skills/setup-pstack/scripts/model_policy.py validate`, `list`, and `ready --snapshot <capabilities.json>`. `validate` checks structure and requires at least one `default` entry; `ready` checks advertised availability against a saved capabilities snapshot. Before each delegated call, resolve the entry against live capabilities. Only a successful delegated run proves the target works.
+You can inspect the pool with `python3 ~/.agents/skills/setup-pstack/scripts/model_policy.py validate`, `list`, and `ready --snapshot <capabilities.json>`. `validate` checks structure and requires at least one `default` entry; `ready` checks advertised availability against a saved capabilities snapshot. Before each delegated call, resolve the entry against live capabilities. Only a successful delegated run proves the target works.
 
 The pool is the model-setup contract: a task may use one entry or several. Reviewing and diagnosing prefer entries from different providers, since differently trained models miss different things. Producing one result prefers one strong entry, and judges check evidence rather than opinions. A model outside the pool needs your explicit authorization for that task; a one-off target is never added to the pool automatically. PStack does not enforce spending limits.
 

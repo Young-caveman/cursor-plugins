@@ -85,7 +85,7 @@ That's the whole prompt. [`/bro`](../../skills/bro/SKILL.md) restates the last m
 - **Parallel writers in one worktree.** `delegate_task` children share the parent's checkout, so they overwrite each other and the diff becomes archaeology. Say "own worktree per attempt" and the writers go through `t3_thread_launch`.
 - **Using `/arena` for coverage.** `/arena` repeats one design or code brief, then picks a base and grafts the best parts. `/swarm` partitions slices or declared race arms and aggregates one report.
 - **Accepting every review comment.** Bots and humans both file real catches and noise in one list. `/interrogate` sorts findings into act-on and dismissed buckets with reasons, and you can override either way.
-- **Assuming a model or effort is available everywhere.** Options like `reasoningEffort`, `variant`, and `effort` differ per provider, and a target outside `~/.config/pstack/models.json` needs your explicit go-ahead. If a level looks wrong, check what actually ran (`pstack/tools/audit-rollout.py` for Codex and OpenCode sessions).
+- **Assuming a model or effort is available everywhere.** Options like `reasoningEffort`, `variant`, and `effort` differ per provider, and a target outside `~/.config/pstack/models.json` needs your explicit go-ahead. If a level looks wrong, check what actually ran (`pstack/tools/audit-rollout.py` in your PStack clone, for Codex and OpenCode sessions).
 - **Reporting success off a green build.** A build proves it compiles. Ask for the real command, flow, stored value, or profile, and expect the evidence in the reply.
 - **Writing a `SKILL.md` freehand.** Route it through the [Authoring or modifying a skill playbook](../../skills/poteto-mode/playbooks/authoring-a-skill.md) so validation and review happen.
 

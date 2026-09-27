@@ -66,7 +66,7 @@ The **poteto-mode** skill shows the shape. Read it for granularity. Don't copy i
 
 Use `skill-creator` when installed; otherwise author directly per the [authoring playbook](../poteto-mode/playbooks/authoring-a-skill.md). Placement:
 
-- Path: preserve an existing mode skill's location. For a new mode that should follow the user everywhere, put it in the PStack source (`skills/<handle>-mode/SKILL.md`) and relink projects with `setup-pstack/scripts/pstack_link.py`. For a project-only mode, use `.agents/skills/<handle>-mode/SKILL.md` and link it into `.claude/skills/` for Claude Code.
+- Path: preserve an existing mode skill's location. For a new mode that should follow the user everywhere: if PStack's skills are links into a PStack checkout, put it there (`skills/<handle>-mode/SKILL.md`) and relink projects with `setup-pstack/scripts/pstack_link.py`; otherwise use `~/.agents/skills/<handle>-mode/SKILL.md` and link it into `~/.claude/skills/`. For a project-only mode, use `.agents/skills/<handle>-mode/SKILL.md` and link it into `.claude/skills/` for Claude Code.
 - Handle: the user's first name or chosen identifier.
 - Frontmatter `description`: trigger on their name + `/<handle>-mode` + "work in their style", not on generic keywords like "write code" or "review PR".
 - Frontmatter formatting: keep `description` as one YAML scalar. Quote it or use `description: >-` with indented continuation lines when punctuation or wrapping requires it.
