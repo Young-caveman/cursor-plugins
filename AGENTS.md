@@ -4,13 +4,13 @@ Current state and rules for working on PStack as of 2026-09-26. History, researc
 
 ## Goal
 
-Turn PStack (originally for Cursor) into the user's personal skill set for Codex, OpenCode, and Claude Code, all run under T3 Code. T3's `orchestrator_capabilities` (what can run) and `delegate_task` (run it) are the contract. OSes: macOS, Omarchy/Arch.
+Turn PStack (originally for Cursor) into the user's personal skill set for Claude Code, Codex, OpenCode, and Pi, all run under T3 Code. T3's `orchestrator_capabilities` (what can run) and `delegate_task` (run it) are the contract. OSes: macOS, Omarchy/Arch.
 
 ## T3 target
 
 PStack targets the user's T3 Code fork, branch `yash/swiftui-orchestrator-v2-support` (remote `origin` `Young-caveman/t3code`; upstream is `pingdotgg/t3code`). The fork keeps release version `0.0.42` but replaces the orchestrator with V2, so the version number does not identify the code. Sources: `/cave/t3code` on Omarchy, `/Users/jimmy/coding/t3code` on the Mac. `docs/operations/custom-fork-host-setup.md` there records the revision each host was built from and the SSH bootstrap.
 
-Check T3 behavior against that checkout, not against memory, upstream `main`, or a tool description. Read:
+The README tells users to build this branch themselves (user decision 2026-09-27); there is no prebuilt download. Check T3 behavior against that checkout, not against memory, upstream `main`, or a tool description. Read:
 
 - `docs/orchestration-v2/orchestrator-mcp-server.md`, `apps/server/src/mcp/toolkits/*/tools.ts`, `packages/contracts/src/orchestratorMcp.ts`: the tools skills call.
 - `apps/server/src/provider/T3OrchestrationInstructions.ts`: what T3 tells every agent about delegation.
@@ -29,7 +29,7 @@ Verified from that source on 2026-09-27:
 - Models live in one v2 pool, `~/.config/pstack/models.json`: `providerInstanceId` + model + confirmed options + optional `tier`. Anything outside the pool needs the user's explicit authorization.
 - Cost: the pool holds only cheap `default`-tier entries (Luna max, DeepSeek, MiMo, Sonnet 5). The user removed Opus 5.5 on 2026-09-27, so there is no `escalation` entry; a harder model needs the user's explicit authorization per task.
 - Never silently substitute a model or raise reasoning effort. Effort levels don't carry across models.
-- Invocation: principle skills, `unslop`, `typescript-best-practices`, and `setup-pstack` may auto-trigger; the 21 workflow skills keep `disable-model-invocation: true` (Claude-only field).
+- Invocation: principle skills, `unslop`, `typescript-best-practices`, and `setup-pstack` may auto-trigger; the 21 workflow skills keep `disable-model-invocation: true` (honored by Claude Code and Pi; Codex and OpenCode ignore it).
 - PStack writes nothing tracked into a user project: no lock files, no `.gitignore` entries, no pointer lines in the project's `AGENTS.md`.
 - Anything checkable by reading files is a script, not manual inspection. Scripts prove state; only a harness run proves behavior.
 - Spawned agents follow `setup-pstack/references/t3-delegation.md`: `delegate_task` takes `target`, `mode`, and `clientRequestId` and shares the parent's checkout; parallel writers get `t3_thread_launch` worktrees with `modelSelection`, not those delegate fields. Briefs stand alone.
@@ -90,11 +90,12 @@ The Mac runs PStack as a normal user would: the README's user-level install (clo
 
 ## State and gaps
 
-- Discovery works in all three harnesses; the model pool is saved and every model in it answered a delegated call.
+- Discovery works in Claude Code, Codex, and OpenCode; the model pool is saved and every model in it answered a delegated call.
 - All workflows are migrated to T3 delegation (`38550b1`). Onboarding and stale references were repaired in `178a2d7`; the review follow-up in `bc5bb53` corrected launch arguments, added skill-authoring fallback, and tightened pool/reviewer/verification behavior. The three-reviewer `/interrogate` verdict is recorded in `pstack/develop-log/2026-09-26T120832Z-progress.md`.
 - State checks on 2026-09-27: 75 script tests passed (50 model policy, 13 doctor, 6 link, 3 discovery, 3 bench); pool validation, Wisdio-pstack doctor and bench check, and `git diff --check` passed. These checks do not prove workflow behavior.
 - Real T3 runs so far: `swarm` passed; `interrogate` ran and returned a three-reviewer verdict. The remaining workflows have not been exercised end to end in the harnesses.
 - A pool with no `default` entry now fails validation. Before each delegated call, resolve the chosen entry against live T3 capabilities; structural validation alone does not establish availability.
+- Pi (user decision 2026-09-27: a supported harness). Facts, from Pi 0.87.1's `docs/skills.md` and T3's `PiDriver.ts`/`PiAdapterV2.ts`: Pi reads `~/.agents/skills` and project `.agents/skills`, so the README install covers it without `-a pi` (that flag only adds links in `~/.pi/agent/skills`); it honors `disable-model-invocation`; skills start with `/skill:<name>`; T3's Pi reasoning option id is `thinking`; sessions live in `~/.pi/agent/sessions`. The Mac's T3 offers Pi (seen in setup; Mac Pi is 0.85.1). Not yet done: any Pi harness run, a Pi pool entry or delegated call, Pi in `harness_discovery.py`, `audit-rollout.py`, `setup-pstack/references/transcripts.md`, or the guide. The user updates the guide after inspecting the real setup.
 - Skill authoring uses `skill-creator` when installed and direct `SKILL.md` authoring otherwise. Do not assume OpenCode has that skill.
 - Workflows are manual-only everywhere (user decision 2026-09-27): each of the 21 workflow descriptions opens "Run only when the user asks for this skill by name or a workflow the user started routes here." Claude Code enforces it via `disable-model-invocation: true`; in Codex and OpenCode it is an instruction only, not yet tested in a harness. `automate-me` writes the same rule into generated mode skills.
 - Claude Code's skill-listing budget scales with the main model's context: Haiku 4.5 sessions cut the list at ~8,000 characters (23 of 25 PStack skills lost their descriptions), while Sonnet 5 and Opus 5.5 sessions kept all 52 descriptions (21,754 characters). Shortening only matters for small-context main models.

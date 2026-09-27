@@ -1,6 +1,6 @@
 # pstack
 
-A personal skill set for doing rigorous work with coding agents under T3 Code, the harness control surface that drives Codex, Claude Code, and OpenCode from one session. It began as [poteto](https://x.com/poteto)'s skill set — she wrote it after working on millions of lines of code at Meta, Netflix, and Cursor, and on the React core team — and this fork keeps her principles while wiring every workflow to T3's orchestration.
+A personal skill set for doing rigorous work with coding agents under T3 Code, the harness control surface that drives Claude Code, Codex, OpenCode, and Pi from one session. It began as [poteto](https://x.com/poteto)'s skill set — she wrote it after working on millions of lines of code at Meta, Netflix, and Cursor, and on the React core team — and this fork keeps her principles while wiring every workflow to T3's orchestration.
 
 **Go deep before parallel.** AI writes too much slop code; throughput without quality is not the goal. Trust one agent to write good, verifiable code, then parallelize with confidence.
 
@@ -8,20 +8,28 @@ A personal skill set for doing rigorous work with coding agents under T3 Code, t
 
 **Write less, better code.** The goal is not to maximize loc. The skills enforce deep understanding, deliberate structure, and verified results.
 
+## Requirements
+
+PStack is built for **T3 Code with orchestrator V2**, which is not in any T3 Code release. Released T3 Code lacks the orchestration tools every workflow calls (`orchestrator_capabilities`, `delegate_task`, `t3_thread_launch`), so PStack's workflows won't work there.
+
+Use the fork [`Young-caveman/t3code`](https://github.com/Young-caveman/t3code), branch `yash/swiftui-orchestrator-v2-support`, and build it yourself. There is no prebuilt download. The fork still reports version `0.0.42`, so the version number won't tell you which build you have. Build instructions are in that repo's README (see "Building from source").
+
+Inside T3 Code, PStack works with four harnesses: Claude Code, Codex, OpenCode, and Pi. Install and log in to the ones you want before setup; each is optional.
+
 ## Status
 
 The skill workflows delegate through T3 Code's orchestration tools. Fork status, harness test evidence, and open gaps live in [AGENTS.md](../AGENTS.md) and [the development log](./develop-log/).
 
 ## Install
 
-PStack runs inside T3 Code with Codex, Claude Code, or OpenCode. Needs `git`, Node.js (for `npx`), and Python 3.9 or later.
+Needs the T3 Code build above, `git`, Node.js (for `npx`), and Python 3.9 or later.
 
 ```bash
 git clone --depth 1 https://github.com/Young-caveman/cursor-plugins ~/.local/share/pstack
 DO_NOT_TRACK=1 npx skills add ~/.local/share/pstack/pstack -g -a claude-code -a codex -a opencode -s '*' -y
 ```
 
-The [`skills`](https://github.com/vercel-labs/skills) installer copies the 47 skills into `~/.agents/skills` (read by Codex and OpenCode) and links each one from `~/.claude/skills` for Claude Code. They show up in every project. Drop the `-a` flags for harnesses you don't use. `DO_NOT_TRACK=1` turns off the installer's usage reporting to Vercel.
+The [`skills`](https://github.com/vercel-labs/skills) installer copies the 47 skills into `~/.agents/skills`, which Codex, OpenCode, and Pi read, and links each one from `~/.claude/skills` for Claude Code. Pi needs no flag of its own. They show up in every project. Drop the `-a` flags for harnesses you don't use. `DO_NOT_TRACK=1` turns off the installer's usage reporting to Vercel.
 
 To update, `git -C ~/.local/share/pstack pull` and run the same `npx` command again. It won't delete a skill PStack removed; do that with `npx skills remove -g -s <name> -y`. Start a new session afterwards: OpenCode caches skills.
 
@@ -32,11 +40,11 @@ The installed skills are copies, and the next update overwrites edits made to th
 Two steps:
 
 1. Run [`setup-pstack`](./skills/setup-pstack/SKILL.md) in a T3 Code thread and choose the models that go in one shared pool, with the reasoning option you confirm for each. One setup covers every harness.
-2. Invoke [`poteto-mode`](./skills/poteto-mode/SKILL.md) whenever you're doing anything that requires rigor. In Claude Code, type `/poteto-mode`; in Codex, `$poteto-mode`; in OpenCode, ask the agent to use the `poteto-mode` skill.
+2. Invoke [`poteto-mode`](./skills/poteto-mode/SKILL.md) whenever you're doing anything that requires rigor. In Claude Code, type `/poteto-mode`; in Codex, `$poteto-mode`; in Pi, `/skill:poteto-mode`; in OpenCode, ask the agent to use the `poteto-mode` skill.
 
 > **Delegation.** Every workflow that spawns agents uses T3's `orchestrator_capabilities` and the tools in [`t3-delegation.md`](./skills/setup-pstack/references/t3-delegation.md): cheap `default`-tier pool entries normally, `escalation` entries only for hard work. `delegate_task` children share the parent's checkout; parallel writers get their own worktree through `t3_thread_launch`.
 
-> **Invocation.** The principles, `unslop`, `typescript-best-practices`, and `setup-pstack` may trigger on their own. The twenty-one workflow skills run only when you ask for them by name or a workflow you started routes to one. Claude Code enforces this through `disable-model-invocation: true`; Codex and OpenCode ignore that field, so each workflow's description states the rule for the model instead.
+> **Invocation.** The principles, `unslop`, `typescript-best-practices`, and `setup-pstack` may trigger on their own. The twenty-one workflow skills run only when you ask for them by name or a workflow you started routes to one. Claude Code and Pi enforce this through `disable-model-invocation: true`; Codex and OpenCode ignore that field, so each workflow's description states the rule for the model instead.
 
 Skill names shown with a leading slash below are shorthand for the harness's skill selector; they are not all literal slash commands.
 
