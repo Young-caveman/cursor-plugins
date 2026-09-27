@@ -36,7 +36,7 @@ The two compose naturally. `do why first then how` is a perfectly good prompt wh
 /recall catch me up on the export work from last week
 ```
 
-[`/recall`](../../skills/recall/SKILL.md) mines your own recent chats plus the shared record (issues, prior fixes, errors still firing) and hands back a brief on where things stand and what's next. Use it when you're returning to a topic cold. If you want to resume one specific chat, that's the Session pickup playbook below, not `/recall`.
+[`/recall`](../../skills/recall/SKILL.md) mines your own recent chats plus the shared record (issues, prior fixes, errors still firing) and hands back a brief on where things stand and what's next. It searches your T3 threads first (`t3_thread_search`), then the harness logs. Use it when you're returning to a topic cold. If you want to resume one specific chat, that's the Session pickup playbook below, not `/recall`.
 
 ## Take over prior work with Session pickup
 

@@ -23,6 +23,24 @@ Verified from that source on 2026-09-27:
 - The Mac is reachable as its own environment (SSH from the desktop app). Work for it goes through a thread the user opens there, or through a project's own out-of-band handoff (Wisdio's `t3-thread-handoff` skill tunnels to the Mac server and sends to an existing thread; it needs the user's explicit request and gives no completion notice).
 - Not yet tested against the live Mac: opening a Mac thread while the Omarchy app is the client, and whether `t3_thread_list` or `t3_project_list` ever show Mac state. Treat "unreachable from here" as the working assumption until a run shows otherwise.
 
+## T3 features PStack uses
+
+The contract is `pstack/skills/setup-pstack/references/t3-delegation.md`; the README's "What PStack uses from T3" table and the guide mirror it. Change all three together.
+
+| T3 feature | PStack use | Where |
+|---|---|---|
+| `orchestrator_capabilities` | providers, models, options for the pool; `runtimeMode`/`interactionMode` gate for launches | `setup-pstack`, every delegating workflow |
+| `delegate_task` (`target`, `mode`, `clientRequestId`, `interactionMode`), `task_status`, `task_cancel` | read-only helpers and one-at-a-time writers in the parent's checkout, always instead of the harness's own subagents | `interrogate`, `why`, `reflect`, `architect`, `recall`, playbooks |
+| `t3_thread_launch` (`title`, `message`, `modelSelection`, `workspaceStrategy` worktree) | parallel writers, one worktree thread each; needs a `full-access` + `default` parent | `arena`, `swarm`, autopilot, multi-phase, orchestrate |
+| `t3_thread_wait`, `t3_thread_read` (truncation continuation), `t3_thread_send` (`queue`/`steer`/`restart`), `t3_thread_interrupt`, `t3_queue_*` | follow, steer, and stop launched threads | orchestrate, autopilot, pause-safely |
+| `t3_pending_request_list/read/respond` | unblock a worker waiting on a question (never approvals) | orchestrate, autopilot, multi-phase |
+| `schedule_task`, `update_scheduled_task`, `delete_scheduled_task`, `list_scheduled_tasks`, `run_scheduled_task_now` | recurring check-ins; paused on pause, deleted at the end | autonomous-run, autopilot, multi-phase, babysit, shipping, orchestrate |
+| `t3_worktree_status`, `t3_worktree_handoff`, `link_pull_request` | move this thread into a worktree; attach every PR layer to the thread | opening-a-pr |
+| `t3_thread_search`, `t3_thread_list` | find earlier threads | `recall`, and `automate-me` via `transcripts.md` |
+| `preview_*` (incl. recording), `device_list/open/screenshot/close` | drive and capture the app | `create-verification-skill` |
+
+Deliberately unused: `t3_thread_fork`, `t3_thread_merge_back`, `create_threads` (briefs stand alone), and project/environment management tools. None of these tools reach another machine (see [T3 target](#t3-target)). New-user smoke test for all of this: `01-setup.md` "Test your setup" (skills visible, pool, `/interrogate`, `/arena` or `/swarm`), run once per main harness.
+
 ## Rules
 
 - A surface that only a different machine can drive is `verified-unreachable` from this one, stated as such in the generated verification skill. Never claim it was verified, and never fake a delegation to it.
@@ -104,7 +122,6 @@ The Mac runs PStack as a normal user would: the README's user-level install (clo
 - Cursor-only parts were deleted on 2026-09-27: `make-bot-ui` (Cursor Grok Bot routines) and `automations/benny` (Cursor automations), plus Cursor frontmatter (`mode`, `icon`, `color`, `reminder`) and `/goal`. Programs keep their objective in `goal.md`; playbooks reread installed skill files, not `git show origin/main:pstack/...`. Unverified, left in place: the `origin pr` forge fallback (gated by `command -v origin`), and `orchestrate`'s Graphite (`gt`) frontier, which contradicts "never require gt" elsewhere.
 - T3 tools wired in 2026-09-27 (`t3-delegation.md`): exact `t3_thread_launch` shape and gate, `task_cancel`/`t3_thread_interrupt`, `t3_thread_send` modes and queue tools, pending requests, scheduled-task lifecycle, `t3_worktree_handoff`, `link_pull_request`, `t3_thread_search`, truncated-text continuation, and preview/device tools in `create-verification-skill`. `t3_thread_fork`/`merge_back` and `create_threads` are deliberately unused (briefs stand alone).
 - T3's Claude adapter silently remaps some effort values (`effortMap`). Warn the user; don't build a remap table.
-- The README's "What PStack uses from T3" table lists every T3 capability wired in; keep it in sync with `t3-delegation.md`. `01-setup.md` "Test your setup" is the new-user smoke test (skills visible, pool, `/interrogate` delegation, `/arena` or `/swarm` worktree launch), run per main harness.
 - The guide (`pstack/docs/guide/`) is for new users only: user-level install, pool, workflows. Linking, doctor, bench, pool scripts, and tests live in `pstack/docs/development.md`. The doctor does not yet compare `pstack-generated-by` stamps.
 - `main` was fast-forwarded to `t3-orchestration` and pushed on 2026-09-27; keep editing on `t3-orchestration`.
 

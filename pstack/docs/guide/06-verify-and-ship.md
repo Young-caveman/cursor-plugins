@@ -32,7 +32,7 @@ The UI bullet above hides a real requirement. The agent needs a scripted way to 
 /create-verification-skill
 ```
 
-[`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md) interviews the repository, not you. It works out what a user touches, how the app launches locally, what can drive it (an existing harness first, otherwise browser and CDP, a PTY, or plain HTTP), what evidence proves behavior, and whether two instances can run side by side. It asks you only what the code can't answer.
+[`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md) interviews the repository, not you. It works out what a user touches, how the app launches locally, what can drive it (an existing harness first; otherwise T3's built-in browser preview for web apps, T3's device tools for iOS and Android simulators, browser and CDP for Electron, a PTY for CLIs, or plain HTTP), what evidence proves behavior (T3 can record a preview run or screenshot a simulator), and whether two instances can run side by side. It asks you only what the code can't answer.
 
 It writes `.agents/skills/verify-<app>/` and links it into `.claude/skills/verify-<app>` for Claude Code; commit both, since the skill belongs to the project. It has agent-facing instructions with exact Launch, Doctor, Drive, Evidence, and Cleanup sections, plus a feature map under `features/` that indexes what the app does and what result proves each feature works. The skill ships a [worked feature-map example](../../skills/create-verification-skill/references/feature-map-example/) with a README index and one file per feature using the four required H2s. Before handing it over, the generator proves the skill once end to end: launch, doctor check, drive one feature, capture evidence, clean up. If that proof fails, don't use the output.
 
@@ -56,7 +56,7 @@ Apps change and feature maps rot. When yours drifts, run:
 /poteto-mode open the pr. small ordered commits, evidence in the description.
 ```
 
-The [Opening a PR playbook](../../skills/poteto-mode/playbooks/opening-a-pr.md) works from a worktree, rebases the work into small ordered commits, cleans the diff, unslops the prose, and returns the PR link. Five narrow PRs beat one fat one, and stacked follow-ups beat a growing branch.
+The [Opening a PR playbook](../../skills/poteto-mode/playbooks/opening-a-pr.md) works from a worktree, rebases the work into small ordered commits, cleans the diff, unslops the prose, and returns the PR link. If your thread isn't in a worktree yet, it moves the thread into a new one with T3's worktree handoff, and it attaches each PR to your T3 thread (`link_pull_request`) so it shows in the sidebar. Five narrow PRs beat one fat one, and stacked follow-ups beat a growing branch.
 
 ## Drive the PR to merge-ready with Babysit
 

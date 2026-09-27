@@ -21,7 +21,7 @@ Walk through what each line buys you:
 - "done means..." turns the goal into checks every iteration can run.
 - "fresh worktree off `<base>`" keeps the run from colliding with anything else you have open.
 - "don't ask me before committing" pre-answers the permission the agent would otherwise block on.
-- "keep going until done" is what the [Autonomous run playbook](../../skills/poteto-mode/playbooks/autonomous-run.md) acts on. It picks a wake mechanism to re-check the finish condition: T3's `schedule_task`, or Claude Code's `/loop` where you have it. Neither is a pstack skill.
+- "keep going until done" is what the [Autonomous run playbook](../../skills/poteto-mode/playbooks/autonomous-run.md) acts on. It picks a wake mechanism to re-check the finish condition: T3's `schedule_task` (works in every harness), or Claude Code's `/loop` where you have it. Neither is a pstack skill. A schedule the run armed is deleted when the run ends; you can see it in T3's scheduled tasks meanwhile.
 - The escape hatch lets it stop at a genuine dead end and write up why, which beats eight hours of creative goal reinterpretation.
 
 Because you'll review this work after stepping away, `/poteto-mode` routes it through [`/figure-it-out`](../../skills/figure-it-out/SKILL.md), which designs the run's phases before any code and wires in the decision log.
@@ -75,6 +75,12 @@ The contract above drives one task to one finish condition. Some nights hold mor
 ```text
 /poteto-mode orchestrate the store migration. own it until every package is converted and merged. i'll check in twice a day.
 ```
+
+## Watch and stop a run in T3
+
+Everything these playbooks start is visible in T3. Helpers that only read show as child tasks under your thread; each parallel writer is its own thread on its own branch in the sidebar. A long run arms a scheduled check-in, which you'll find in T3's scheduled tasks. Before starting, set the thread to **full access** and **default** mode: in plan mode no writer can run, and the agent will tell you to switch.
+
+To stop cleanly, say "pause safely". The [Pause safely playbook](../../skills/poteto-mode/playbooks/pause-safely.md) cancels its helpers, interrupts the writer threads it launched, pauses its schedule, commits a `wip:` checkpoint, and writes a resume note. Stopping only your own thread in T3 doesn't stop the writer threads it launched or its schedule.
 
 **Pitfall:** a duration is not a finish condition. "work on this for 4 hours" gives the agent nothing to check, and you'll wake up to four hours of motion instead of a result. Give the run a predicate that can pass or fail.
 
