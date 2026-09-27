@@ -90,6 +90,8 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 **Delegation.** Every delegated call follows [T3 delegation](../setup-pstack/references/t3-delegation.md): T3's `delegate_task`, never the harness's own subagent tool. Playbook delegates get a brief that opens with: "Read `<absolute path of this SKILL.md>` in full before any work, including its Principles index." Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) keep their own brief templates.
 
+**Clean up what you start.** Keep the ids of what you arm and stop it when the task ends or stops: `delete_scheduled_task` for a `schedule_task` heartbeat, `task_cancel` for a watcher or other delegated child still running, `t3_thread_interrupt` for a launched thread still working. Link every PR you or your children open to the opening thread with `link_pull_request`.
+
 **Model choice.** Pick from the pool with `model_policy.py list --tier default`. Cross-cutting designs, gnarly concurrency, subtle algorithms, and a fix that already failed once justify an `escalation` entry; say so when you use one. Mechanical edits take the cheapest `default` entry that can do them. A target outside the pool needs the user's explicit authorization. Never silently raise effort.
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. Chains of follow-up messages to one child silently drop directives, so fire a fresh subagent with consolidated scope rather than trusting a "done" summary. For a second opinion, choose a pool entry from a different provider. Agreement across differently trained models is stronger evidence than repeated calls to one model.
@@ -131,7 +133,7 @@ A large or cross-cutting effort (a migration across many call sites, an ambitiou
 - **Authoring or modifying a skill.** Writing or editing a SKILL.md. `playbooks/authoring-a-skill.md`.
 - **Eval.** Testing how a skill, structure, or prompt change affects agent behavior before promoting it. `playbooks/eval.md`.
 - **Babysit.** Driving a PR or a stack to merge-ready: conflicts, review threads, CI. `playbooks/babysit.md`.
-- **Shipping.** The half after Babysit. Independently verifying a green stack, then landing the contiguous verified run bottom-up through `gh` by default or Origin when its CLI is available. `playbooks/shipping.md`.
+- **Shipping.** The half after Babysit. Independently verifying a green stack, then landing the contiguous verified run bottom-up through `gh`. `playbooks/shipping.md`.
 - **Autonomous run.** A long task to drive to completion without stopping ("run until done", "/loop until X"). `playbooks/autonomous-run.md`.
 - **Orchestrate.** A standing project handed to one coordinator chat: multi-day, many stacked PRs, dozens to hundreds of subagents, minimal human turns ("run this whole project", "own this migration until it lands"). Distinct from Autonomous run, which drives one task to a predicate. Work one agent could finish inside the session's budget routes there, not here, however program-shaped the phrasing sounds. `playbooks/orchestrate.md`.
 - **Autopilot-full.** A queue of independent PRs run to merged with full autonomy. One owner per PR carries build through merge, and the root swarm-verifies each merge-ready head before its owner merges ("autopilot this queue", "full autopilot", one-owner-per-PR programs). `playbooks/autopilot-full.md`.

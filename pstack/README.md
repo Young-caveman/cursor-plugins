@@ -57,16 +57,16 @@ That's it. The other skills are situational; the mode skill uses them for you as
 | T3 capability | Used for | Where |
 |---|---|---|
 | `orchestrator_capabilities` | which providers, models, and options can run; whether this thread may launch writers | `setup-pstack`, every delegating workflow |
-| `delegate_task`, `task_status`, `task_cancel` | read-only helpers (review, research, judging) and one-at-a-time writers, on pool models | `interrogate`, `why`, `reflect`, `architect`, playbooks |
-| `t3_thread_launch` with a worktree | parallel writers, each in its own branch and thread | `arena`, `swarm`, autopilot and multi-phase playbooks |
-| `t3_thread_wait`, `t3_thread_read`, `t3_thread_send`, `t3_thread_interrupt`, queue tools | follow, steer, and stop launched threads | `orchestrate`, autopilot, `pause-safely` |
-| `t3_pending_request_*` | answer a worker stuck on a question | `orchestrate`, autopilot |
+| `delegate_task`, `task_status`, `task_cancel` | read-only helpers (review, research, judging) and one-at-a-time writers, on pool models | `interrogate`, `why`, `reflect`, `architect`, `recall`, `automate-me`, playbooks |
+| `t3_thread_launch` with a worktree | parallel writers, each in its own branch and thread | `arena`, `swarm`, autopilot, multi-phase, `orchestrate`, `hillclimb`, `shipping`, `opening-a-pr` |
+| `t3_thread_wait`, `t3_thread_read`, `t3_thread_send`, `t3_thread_interrupt`, queue tools | follow, steer, and stop launched threads | `arena`, `swarm`, `orchestrate`, autopilot, `pause-safely` |
+| `t3_pending_request_*` | answer a worker stuck on a question | `orchestrate`, autopilot, multi-phase |
 | `schedule_task` and its update/delete/run tools | recurring check-ins for long runs, removed when the run ends | long-running playbooks (autopilot, multi-phase, babysit, shipping) |
 | `t3_worktree_status`, `t3_worktree_handoff`, `link_pull_request` | move a thread into a fresh worktree; attach PRs to the thread | `opening-a-pr` |
 | `t3_thread_search`, `t3_thread_list` | find earlier work | `recall`, transcripts reference |
 | `preview_*`, `device_*` | drive and screenshot the app | `create-verification-skill` |
 
-Inside a PStack workflow, the agent uses T3's tools instead of its harness's own subagents, so every helper runs on a model from your pool. `t3_thread_fork`, `t3_thread_merge_back`, and `create_threads` are unused: briefs stand alone. All T3 work stays on the computer whose T3 server runs the thread: an agent can't delegate to another computer, even one connected to the same T3 app. See [Two computers](./docs/guide/01-setup.md#two-computers).
+Inside a PStack workflow, the agent uses T3's tools instead of its harness's own subagents, so every helper runs on a model from your pool. `t3_thread_fork`, `t3_thread_merge_back`, and `create_threads` are unused: briefs stand alone. All T3 work stays on the computer whose T3 server runs the thread: an agent can't delegate to another computer, even one connected to the same T3 app. The one exception is simulators: T3 can drive them on another computer configured as an SSH device host. See [Two computers](./docs/guide/01-setup.md#two-computers).
 
 ## Usage
 
@@ -102,7 +102,7 @@ Use poteto-mode: I'm going to bed. Land the stack even if CI flakes. I want ever
 | [authoring a skill](./skills/poteto-mode/playbooks/authoring-a-skill.md) | writing or editing a SKILL.md. |
 | [eval](./skills/poteto-mode/playbooks/eval.md) | test how a skill or prompt change affects agent behavior, blinded. |
 | [babysit](./skills/poteto-mode/playbooks/babysit.md) | drive a pr or a stack to merge-ready: conflicts, review threads, ci. |
-| [shipping](./skills/poteto-mode/playbooks/shipping.md) | independently verify a green stack, then land the contiguous verified run bottom-up through github by default or origin when available. |
+| [shipping](./skills/poteto-mode/playbooks/shipping.md) | independently verify a green stack, then land the contiguous verified run bottom-up through github. |
 | [autonomous run](./skills/poteto-mode/playbooks/autonomous-run.md) | drive a long task to completion without stopping. |
 | [orchestrate](./skills/poteto-mode/playbooks/orchestrate.md) | a standing project handed to one coordinator chat: multi-day, many stacked prs, fleets of subagents. |
 | [autopilot-full](./skills/poteto-mode/playbooks/autopilot-full.md) | run independent prs to merged with one owner per pr and root verification of each merge-ready head. |

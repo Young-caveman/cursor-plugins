@@ -54,7 +54,7 @@ The pool is the model-setup contract: a task may use one entry or several. Revie
 
 ## Two computers
 
-T3 Code can connect one app to several computers, for example a laptop and a desktop. Each computer runs its own T3 server, and each thread belongs to one of them. An agent's T3 tools act only on its own computer: a workflow started on one computer cannot delegate to, read, or steer agents on the other. The app shows both computers' threads side by side, but moving work between them is up to you.
+T3 Code can connect one app to several computers, for example a laptop and a desktop. Each computer runs its own T3 server, and each thread belongs to one of them. An agent's T3 tools act only on its own computer: a workflow started on one computer cannot delegate to, read, or steer agents on the other. The one exception is simulators: when T3 is configured with another computer as an SSH device host, its device tools can drive that computer's iOS Simulators or Android Emulators. The app shows both computers' threads side by side, but moving work between them is up to you.
 
 So start each workflow on the computer that owns the work: the one with the right checkout, tools (Xcode for an iOS app, for example), and logged-in models. When a step can only run on the other computer, the agent writes it up as a task file and reports it as `not run: needs <machine>`; you run it there. A project can ship its own handoff skill that sends a message to a thread on the other computer, but it runs only when you ask and gives no completion notice.
 

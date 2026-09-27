@@ -14,7 +14,7 @@ Fan out N parallel workers through T3. They cover separate slices, race the same
 2. Choose the shape: partition into slices, race N workers on one brief, or mix. For a race, declare the selection rule before launching: `first pass`, `rank all`, or `best-of`.
 3. Set N from the user, or derive it from the shape. N counts workers, not concurrency.
 4. Pick each worker's pool entry and dry-run it with `model_policy.py resolve --id <entry> --snapshot <capabilities.json>`. For a model race, give each arm a different entry and name them up front. A target outside the pool needs the user's explicit authorization.
-5. Decide who writes. Read-only workers run as `delegate_task` children. Workers that edit files each get their own worktree via `t3_thread_launch`, because `delegate_task` children share this checkout.
+5. Decide who writes. Read-only workers run as `delegate_task` children. Workers that edit files, or that must build or run a different commit than this checkout (a verifier at a PR head SHA), each get their own worktree via `t3_thread_launch`, because `delegate_task` children share this checkout.
 
 ## 2. Fan out
 

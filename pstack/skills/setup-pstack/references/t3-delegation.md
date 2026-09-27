@@ -13,7 +13,7 @@ Inside a PStack workflow, these rules replace T3's general delegation advice:
 |---|---|---|
 | Read-only work: research, review, judging | `delegate_task` | the parent's checkout (same project, branch, worktree) |
 | One writer at a time | `delegate_task` | the parent's checkout |
-| Several writers in parallel (arena candidates, race arms that edit code) | `t3_thread_launch` with `workspaceStrategy: {type: "worktree", baseRef: <current branch>, branch: <new>, startFromOrigin: false}`, one per writer | its own new worktree |
+| Several writers in parallel (arena candidates, race arms that edit code), or read-only work that must build or run a different commit (a verifier at a PR head) | `t3_thread_launch` with `workspaceStrategy: {type: "worktree", baseRef: <current branch>, branch: <new>, startFromOrigin: false}`, one per writer | its own new worktree |
 
 `delegate_task` children always share the parent's checkout, so parallel writers there overwrite each other.
 
@@ -29,7 +29,7 @@ To move **this** thread into a fresh worktree (for example before opening a PR),
 
 ## One machine only
 
-A T3 server is one environment, and its `t3-code` tools act only inside it. `delegate_task`, `t3_thread_launch`, and `create_threads` take no machine argument and always run where this thread's server runs. Another computer connected to the user's T3 app is a separate environment: no PStack workflow can start, read, or steer work there. When a step needs it (a check only that OS can run, a checkout that exists only there):
+A T3 server is one environment, and its `t3-code` tools act only inside it. `delegate_task`, `t3_thread_launch`, and `create_threads` take no machine argument and always run where this thread's server runs. Only the `device_*` tools reach further, to simulators on SSH device hosts configured in this environment (`device_list` shows them). Another computer connected to the user's T3 app is a separate environment: no PStack workflow can start, read, or steer work there. When a step needs it (a check only that OS can run, a checkout that exists only there):
 
 1. Do everything that can run here, then write the remaining step as a standalone task file: goal, branch or commit to use, commands, and the evidence to bring back.
 2. Hand it off through the project's own handoff skill if it has one and the user asked for it, otherwise give the file to the user. Never send work to another environment on your own.

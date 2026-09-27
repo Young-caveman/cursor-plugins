@@ -10,7 +10,7 @@ PStack (originally for Cursor) is the user's personal skill set for Claude Code,
 
 - The user's fork `Young-caveman/t3code`, branch `yash/swiftui-orchestrator-v2-support` (upstream `pingdotgg/t3code`). It still reports version `0.0.42`, so the version doesn't identify the code. Users build it themselves; the README says so.
 - Source: `/cave/t3code` here, `/Users/jimmy/coding/t3code` on the Mac. Read-only. Check T3 behavior there, not from memory or tool descriptions: `docs/orchestration-v2/orchestrator-mcp-server.md`, `apps/server/src/mcp/toolkits/*/tools.ts`, `packages/contracts/src/orchestratorMcp.ts`, `apps/server/src/provider/T3OrchestrationInstructions.ts`, `docs/internals/remote.md`.
-- One T3 server is one environment. No T3 tool takes a machine argument, so delegation from an Omarchy thread cannot reach the Mac. Mac work goes through a thread the user opens there, or Wisdio's `t3-thread-handoff` skill on the user's explicit request (no completion notice).
+- One T3 server is one environment. No thread or delegation tool takes an environment argument, so delegation from an Omarchy thread cannot reach the Mac. Exception: `device_*` tools reach simulators on SSH device hosts configured in that environment (`packages/contracts/src/device.ts`, `SshDeviceHost.ts`); not tested here. Mac work goes through a thread the user opens there, or Wisdio's `t3-thread-handoff` skill on the user's explicit request (no completion notice).
 
 ## T3 features PStack uses
 
@@ -20,8 +20,8 @@ The contract is `pstack/skills/setup-pstack/references/t3-delegation.md`; the RE
 |---|---|---|
 | `orchestrator_capabilities` | providers, models, options for the pool; `runtimeMode`/`interactionMode` gate for launches | `setup-pstack`, every delegating workflow |
 | `delegate_task` (`target`, `mode`, `clientRequestId`, `interactionMode`), `task_status`, `task_cancel` | read-only helpers and one-at-a-time writers in the parent's checkout, instead of the harness's own subagents | `interrogate`, `why`, `reflect`, `architect`, `recall`, `automate-me`, playbooks |
-| `t3_thread_launch` (`title`, `message`, `modelSelection`, worktree `workspaceStrategy`) | parallel writers, one worktree thread each; parent must be `full-access` + `default` | `arena`, `swarm`, autopilot, multi-phase, orchestrate |
-| `t3_thread_wait`, `t3_thread_read`, `t3_thread_send` (`queue`/`steer`/`restart`), `t3_thread_interrupt`, `t3_queue_*` | follow, steer, stop launched threads | orchestrate, autopilot, pause-safely |
+| `t3_thread_launch` (`title`, `message`, `modelSelection`, worktree `workspaceStrategy`) | parallel writers, one worktree thread each; parent must be `full-access` + `default` | `arena`, `swarm`, autopilot, multi-phase, orchestrate, hillclimb, shipping, opening-a-pr |
+| `t3_thread_wait`, `t3_thread_read`, `t3_thread_send` (`queue`/`steer`/`restart`), `t3_thread_interrupt`, `t3_queue_*` | follow, steer, stop launched threads | `arena`, `swarm`, orchestrate, autopilot, pause-safely |
 | `t3_pending_request_*` | answer a worker's question (never approvals) | orchestrate, autopilot, multi-phase |
 | `schedule_task` + update/delete/list/run-now | recurring check-ins; paused on pause, deleted at the end | autonomous-run, autopilot, multi-phase, babysit, shipping, orchestrate |
 | `t3_worktree_status`, `t3_worktree_handoff`, `link_pull_request` | move this thread into a worktree; attach every PR layer | opening-a-pr |
@@ -41,7 +41,7 @@ Unused on purpose: `t3_thread_fork`, `t3_thread_merge_back`, `create_threads` (b
 - Anything checkable by reading files is a script. Scripts prove state; only a harness run proves behavior.
 - Keep skill text short; current models over-follow ceremony.
 - Keep work under `pstack/`. The repo is sparse-checkout (`/*`, `!/*/`, `/pstack/`); `git sparse-checkout add <dir>` before a new top-level dir, never disable it.
-- The user runs installs and harness tests. Prefer free OpenCode models (Muse Spark 1.3 Free) for tests and delegated research.
+- The user runs installs and harness tests.
 - Push, and fast-forward `main` to `t3-orchestration`, only with the user's OK. Edit on `t3-orchestration`.
 
 ## Layout
@@ -62,7 +62,7 @@ Scripts are in `pstack/skills/setup-pstack/scripts/`.
 1. Edit skills here.
 2. Added, renamed, or removed a skill → `pstack_link.py --project /cave/Wisdio-pstack --harness codex --harness opencode --harness claude --apply`. Text edits need nothing.
 3. Test from a T3 thread in `/cave/Wisdio-pstack`; start new sessions after edits (OpenCode caches skills).
-4. After a test → `bench_check.py --project /cave/Wisdio-pstack --base develop1-engine [--reset]`.
+4. After a test → `bench_check.py --project /cave/Wisdio-pstack --base develop1-engine [--reset]`. Reset can't undo effects outside the checkout (databases, servers, pushes).
 5. Broken → `pstack_doctor.py --project /cave/Wisdio-pstack` first; read other projects' runs with `audit-rollout.py`.
 6. Commit here; log results in `pstack/develop-log/`.
 
@@ -91,21 +91,21 @@ Update the bench: `git -C /cave/Wisdio-pstack merge develop1-engine`.
 Verified:
 - Every pool model answered a delegated call. `swarm` passed and `interrogate` returned a three-reviewer verdict in real T3 runs. A delegated Pi call (MiMo 2.6 Pro) and a Codex Luna review ran on 2026-09-27.
 - Pi reads `~/.agents/skills` (no `-a pi` needed), honors `disable-model-invocation`, starts skills with `/skill:<name>`, uses the `thinking` option, and logs to `~/.pi/agent/sessions`.
-- Cursor-only parts are gone (`make-bot-ui`, `automations/benny`, Cursor frontmatter, `/goal`). Programs keep their objective in `goal.md`.
+- Cursor-only parts are gone (`make-bot-ui`, `automations/benny`, Cursor frontmatter, `/goal`, the Cursor Origin forge; PRs go through `gh`). Programs keep their objective in `goal.md`. `poteto-mode` "Clean up what you start" requires deleting schedules, stopping children, and linking PRs.
 - README and guide describe the T3 requirement, Pi, the T3 feature table, and a new-user smoke test (`01-setup.md` "Test your setup").
 
 Not verified:
 - Most workflows end to end, and each harness as the main chat (Pi not at all).
 - Whether each harness obeys the native-subagent override, and whether Codex/OpenCode respect manual-only workflows.
 - Plan-mode enforcement and MCP retention per provider.
-- The `origin pr` forge fallback, and `orchestrate`'s Graphite (`gt`) frontier, which contradicts "never require gt" elsewhere.
+- Open decisions (user): `orchestrate`'s frontier needs Graphite (`gt`, also in `orch.ts`) while other playbooks say never require it; Babysit's triage keys on Cursor's Bugbot (`watch-pr/policy.ts`); `opening-a-pr` makes a delegated PR opener always run `interrogate`.
 - No Pi pool entry yet. The doctor doesn't compare `pstack-generated-by` stamps.
 - Claude Code with Haiku 4.5 as main model truncates the skill list (~8,000 characters); larger models showed all descriptions.
 
 ## Next
 
 1. The user runs "Test your setup" in each harness.
-2. First real Wisdio task: `/create-verification-skill` in `/cave/Wisdio-pstack`, then prove it on one feature.
+2. First real Wisdio task: `/create-verification-skill` in `/cave/Wisdio-pstack` for a macOS verification skeleton, then prove it on one feature.
 3. Later: shorten skill descriptions if Haiku runs the main chat; evals to pick models per task.
 
 ## Safety
