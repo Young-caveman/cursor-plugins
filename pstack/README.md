@@ -66,7 +66,7 @@ That's it. The other skills are situational; the mode skill uses them for you as
 | `t3_thread_search`, `t3_thread_list` | find earlier work | `recall`, transcripts reference |
 | `preview_*`, `device_*` | drive and screenshot the app | `create-verification-skill` |
 
-Inside a PStack workflow, the agent uses T3's tools instead of its harness's own subagents, so every helper runs on a model from your pool. `t3_thread_fork`, `t3_thread_merge_back`, and `create_threads` are unused: briefs stand alone. All T3 work stays on the machine whose T3 server runs the thread.
+Inside a PStack workflow, the agent uses T3's tools instead of its harness's own subagents, so every helper runs on a model from your pool. `t3_thread_fork`, `t3_thread_merge_back`, and `create_threads` are unused: briefs stand alone. All T3 work stays on the computer whose T3 server runs the thread: an agent can't delegate to another computer, even one connected to the same T3 app. See [Two computers](./docs/guide/01-setup.md#two-computers).
 
 ## Usage
 

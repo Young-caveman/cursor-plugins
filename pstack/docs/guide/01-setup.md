@@ -52,6 +52,22 @@ The pool is the model-setup contract: a task may use one entry or several. Revie
 
 `setup-pstack` configures models only. If you want a scripted way to prove app behavior, invoke [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md) yourself; [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) covers when it earns its place.
 
+## Two computers
+
+T3 Code can connect one app to several computers, for example a laptop and a desktop. Each computer runs its own T3 server, and each thread belongs to one of them. An agent's T3 tools act only on its own computer: a workflow started on one computer cannot delegate to, read, or steer agents on the other. The app shows both computers' threads side by side, but moving work between them is up to you.
+
+So start each workflow on the computer that owns the work: the one with the right checkout, tools (Xcode for an iOS app, for example), and logged-in models. When a step can only run on the other computer, the agent writes it up as a task file and reports it as `not run: needs <machine>`; you run it there. A project can ship its own handoff skill that sends a message to a thread on the other computer, but it runs only when you ask and gives no completion notice.
+
+What to keep the same:
+
+| | Same on both computers? |
+|---|---|
+| PStack version | Yes. Install and update from the same `main` on both. |
+| T3 Code build | Yes. Build the same fork commit. |
+| Model pool | No. Run `setup-pstack` on each; the pool lists only what that computer can run. Never copy `models.json`. |
+| Harnesses logged in | Your choice. A computer without Claude Code simply uses its other models; reviews say when they couldn't mix vendors. |
+| Project code | Synced through git commits. |
+
 ## Test your setup
 
 Run these once, in order, in a throwaway branch of a real project. Each step checks one piece; stop at the first one that fails.
