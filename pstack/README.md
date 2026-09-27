@@ -16,8 +16,6 @@ The skill workflows delegate through T3 Code's orchestration tools. Fork status,
 
 PStack runs inside T3 Code with Codex, Claude Code, or OpenCode. Needs `git`, Node.js (for `npx`), and Python 3.9 or later.
 
-### For every project (most people)
-
 ```bash
 git clone --depth 1 https://github.com/Young-caveman/cursor-plugins ~/.local/share/pstack
 DO_NOT_TRACK=1 npx skills add ~/.local/share/pstack/pstack -g -a claude-code -a codex -a opencode -s '*' -y
@@ -27,23 +25,7 @@ The [`skills`](https://github.com/vercel-labs/skills) installer copies the 47 sk
 
 To update, `git -C ~/.local/share/pstack pull` and run the same `npx` command again. It won't delete a skill PStack removed; do that with `npx skills remove -g -s <name> -y`. Start a new session afterwards: OpenCode caches skills.
 
-The installed skills are copies. Edit them in the clone, not in `~/.agents/skills`, or the next update overwrites your edit.
-
-### Linked into one project (for editing PStack)
-
-If you change PStack itself, link its skills into one project instead, so an edit in your clone is live there without reinstalling. From this `pstack` directory (dry run without `--apply`; the other scripts below live beside it in `skills/setup-pstack/scripts/`):
-
-```bash
-python3 skills/setup-pstack/scripts/pstack_link.py --project /path/to/repo \
-  --harness codex --harness opencode --harness claude --apply
-```
-
-- Codex reads `.agents/skills`. Claude Code reads only `.claude/skills`, not `.agents/`. OpenCode reads both and de-duplicates by name. Pass only the `--harness` flags you use.
-- The links stay out of git through a managed block in the repo's `.git/info/exclude`. PStack adds no lock file, no `.gitignore` entry, and no line in your project's `AGENTS.md`.
-- Rerun the command after you add, rename, or remove a skill. Text edits need no relinking: Claude Code and Codex see them live; OpenCode caches skills, so start a new session.
-- `pstack_doctor.py --project /path/to/repo` reports drift between the source and a project. `harness_discovery.py --project /path/to/repo` shows which skills Codex and Claude Code actually offered their model in the newest session there.
-- To test PStack on a real repo, give it a separate worktree on its own branch. `bench_check.py --project <bench> --base <branch>` lists what a test run left there; `--reset` asks, then resets the bench to the base branch and keeps the links.
-- Don't combine the two on one machine: a project with links and a user-level install shows every skill twice. `pstack_doctor.py` and `pstack_link.py` only understand linked installs.
+The installed skills are copies, and the next update overwrites edits made to them. To change PStack's own skills, see [Developing PStack](./docs/development.md).
 
 ## Get started
 

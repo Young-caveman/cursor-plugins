@@ -101,7 +101,7 @@ The Mac runs PStack as a normal user would: the README's user-level install (clo
 - Plan mode's read-only enforcement and whether it keeps MCP servers are unverified per provider; `why` and `reflect` avoid plan mode for that reason. User decision 2026-09-27: leave as is for now, deal with it later.
 - `make-bot-ui` targets a Grok Bot webhook on `cursor.sh`; left as is.
 - T3's Claude adapter silently remaps some effort values (`effortMap`). Warn the user; don't build a remap table.
-- `pstack/docs/guide/01-setup.md` opens with "Why the setup looks like this": symlinks, the user-level pool, and the artifact-drift table. The doctor does not yet compare `pstack-generated-by` stamps.
+- The guide (`pstack/docs/guide/`) is for new users only: user-level install, pool, workflows. Linking, doctor, bench, pool scripts, and tests live in `pstack/docs/development.md`. The doctor does not yet compare `pstack-generated-by` stamps.
 - `main` was fast-forwarded to `t3-orchestration` and pushed on 2026-09-27; keep editing on `t3-orchestration`.
 
 ## Next
