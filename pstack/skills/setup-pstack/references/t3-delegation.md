@@ -2,6 +2,8 @@
 
 Every PStack workflow that spawns agents (`arena`, `swarm`, `interrogate`, `architect`, `poteto-mode` playbooks) delegates through T3's `t3-code` MCP tools. Harness-native subagent tools, Cursor `Task` fields, and agent types are not used. Model choice follows [the pool contract](model-routing.md).
 
+Inside a PStack workflow, these rules replace T3's general delegation advice. Don't use native subagents even for same-provider work, because they bypass the pool's model and options. A workflow the user started that needs parallel writers counts as the user's request for new threads, so `t3_thread_launch` is allowed there.
+
 ## Tool for the job
 
 | Need | Tool | Where it runs |
